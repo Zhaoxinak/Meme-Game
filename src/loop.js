@@ -174,7 +174,7 @@ function refreshShopUI() {
 }
 document.querySelectorAll("#sd-tabs .shop-tab").forEach(b => {
   b.onclick = () => {
-    initAudio();
+    initAudio(); resumeAudio();
     shopTab = b.dataset.tab;
     document.querySelectorAll("#sd-tabs .shop-tab").forEach(x => x.classList.toggle("on", x === b));
     refreshShopUI();
@@ -252,6 +252,7 @@ function showSiegeEnd(win) {
     "<div style='margin-top:8px;font-size:11.5px;color:#9a8f7a;'>* = 超时撤退（敌人未清完但时间到）</div>";
   if (win) { sfx("win"); setTimeout(() => sfx("laugh"), 500); victoryConfetti(); }
   else sfx("lose");
+  playBgm("menu");                       // W3：结算画面回到菜单曲
   $("end").classList.add("show");
 }
 
@@ -264,6 +265,7 @@ function startGame(mode) {
   resetGame();
   G.mode = mode;
   G.diffMul = pickDiff;
+  playBgm(mode === "arena" ? "arena" : "siege_battle");   // W3：进模式即切对应 BGM（menu→战斗曲，幂等）
   if (mode === "siege") {
     // 送两个起手兵，避免开局空城的茫然感；真正的第一课是「用 120 金买什么」
     buyUnit("melee"); buyUnit("ranged");
@@ -289,8 +291,8 @@ function startGame(mode) {
   document.body.classList.add("playing");
   if (typeof resize === "function") resize();
 }
-$("btn-mode-siege").onclick = () => { initAudio(); startGame("siege"); };
-$("btn-mode-arena").onclick = () => { initAudio(); startGame("arena"); };
+$("btn-mode-siege").onclick = () => { initAudio(); resumeAudio(); startGame("siege"); };
+$("btn-mode-arena").onclick = () => { initAudio(); resumeAudio(); startGame("arena"); };
 document.querySelectorAll(".diff-btn").forEach(b => {
   b.onclick = () => {
     document.querySelectorAll(".diff-btn").forEach(x => x.classList.remove("on"));
@@ -438,4 +440,57 @@ resetGame();
 buildCmdBar();
 if (typeof window !== "undefined") { window.addEventListener("resize", resize); resize(); }
 requestAnimationFrame(frame);
+
+/* =============================================================================
+ * W3 · 加载态 + 设置面板 + BGM 启动（详见附录 C · W3 / 附录 B §B2.4）
+ * ===========================================================================*/
+function setLoad(p) {
+  p = Math.max(0, Math.min(100, p));
+  const f = $("ld-fill"); if (f) f.style.width = p + "%";
+  const t = $("ld-pct");  if (t) t.textContent = Math.round(p) + "%";
+}
+function hideLoading() {
+  const el = $("loading"); if (!el) return;
+  el.classList.add("done");
+  if (typeof setTimeout === "function") setTimeout(() => { if (el) el.style.display = "none"; }, 480);
+  else el.style.display = "none";
+}
+function openSettings() {
+  const v = getVolumes();
+  const sm = $("vol-master"), sb = $("vol-bgm"), ss = $("vol-sfx");
+  if (sm) { sm.value = Math.round(v.master * 100); const e = $("vol-master-v"); if (e) e.textContent = Math.round(v.master * 100) + "%"; }
+  if (sb) { sb.value = Math.round(v.bgm * 100);    const e = $("vol-bgm-v");    if (e) e.textContent = Math.round(v.bgm * 100) + "%"; }
+  if (ss) { ss.value = Math.round(v.sfx * 100);    const e = $("vol-sfx-v");    if (e) e.textContent = Math.round(v.sfx * 100) + "%"; }
+  const tg = $("bgm-toggle");
+  if (tg) { const on = getBgmState().enabled; tg.textContent = on ? "开启" : "关闭"; tg.classList.toggle("off", !on); }
+  const s = $("settings"); if (s) s.classList.add("show");
+}
+function closeSettings() { const s = $("settings"); if (s) s.classList.remove("show"); }
+
+/* 按钮接线 */
+const _btnSettings = $("btn-settings");     if (_btnSettings) _btnSettings.onclick = openSettings;
+const _btnSetClose = $("btn-settings-close"); if (_btnSetClose) _btnSetClose.onclick = closeSettings;
+const _btnOpenSet  = $("btn-open-settings");  if (_btnOpenSet)  _btnOpenSet.onclick = openSettings;
+const _vm = $("vol-master"); if (_vm) _vm.oninput = () => { const v = +_vm.value; setVolume("master", v / 100); const e = $("vol-master-v"); if (e) e.textContent = v + "%"; };
+const _vb = $("vol-bgm");    if (_vb) _vb.oninput = () => { const v = +_vb.value; setVolume("bgm", v / 100);    const e = $("vol-bgm-v");    if (e) e.textContent = v + "%"; };
+const _vs = $("vol-sfx");    if (_vs) _vs.oninput = () => { const v = +_vs.value; setVolume("sfx", v / 100);    const e = $("vol-sfx-v");    if (e) e.textContent = v + "%"; };
+const _bgmTg = $("bgm-toggle");
+if (_bgmTg) _bgmTg.onclick = () => {
+  const on = !getBgmState().enabled;
+  setBgmEnabled(on);
+  _bgmTg.textContent = on ? "开启" : "关闭";
+  _bgmTg.classList.toggle("off", !on);
+};
+
+/* 启动序列：创建音频上下文 → 挂起 menu BGM（等首次手势出声）→ 拉加载条 → 揭幕 */
+initAudio();
+playBgm("menu");
+setLoad(20);
+if (typeof requestAnimationFrame === "function") {
+  requestAnimationFrame(() => {
+    setLoad(80);
+    if (typeof setTimeout === "function") setTimeout(() => { setLoad(100); hideLoading(); }, 450);
+    else { setLoad(100); hideLoading(); }
+  });
+} else { setLoad(100); hideLoading(); }
 

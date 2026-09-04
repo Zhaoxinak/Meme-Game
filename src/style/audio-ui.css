@@ -1,0 +1,43 @@
+/* =============================================================================
+ * audio-ui.css — W3 加载态 + 设置面板 + 齿轮按钮（商业化门面）
+ * -----------------------------------------------------------------------------
+ * 仅覆盖新增 UI，不触碰任何布局。删除整文件即可回滚到无加载态/无设置面板的版本。
+ * ===========================================================================*/
+
+/* ===== 加载态（首屏不白屏）===== */
+#loading {
+  flex-direction: column;
+  transition: opacity .45s ease;
+  font-family: inherit;
+}
+#loading.done { opacity: 0; pointer-events: none; }
+.ld-inner { text-align: center; }
+.ld-logo {
+  font-size: 30px; font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(90deg, #ffe6a8, #f4b860, #ff9f7a);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(244, 184, 96, .4));
+}
+.ld-sub { color: #d8c39e; font-size: 12px; margin-top: 6px; }
+.ld-bar {
+  width: 220px; height: 8px; margin: 16px auto 8px;
+  background: rgba(255, 255, 255, .12); border-radius: 6px; overflow: hidden;
+}
+.ld-fill {
+  width: 0%; height: 100%;
+  background: linear-gradient(90deg, #f4b860, #ff9f7a);
+  transition: width .25s ease;
+}
+.ld-pct { color: #b9a7d6; font-size: 11px; }
+
+/* ===== 设置面板 ===== */
+#settings .set-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 14px 0; color: #e8dcc6; font-size: 14px;
+}
+#settings .set-row label { width: 84px; text-align: right; color: #ffd98a; flex: none; }
+#settings input[type=range] { flex: 1; accent-color: #f4b860; cursor: pointer; }
+#settings .set-row span { width: 48px; color: #b9a7d6; font-size: 12px; flex: none; }
+#settings .btn { margin-top: 8px; }
+#bgm-toggle.off { opacity: .6; }
+#btn-settings { font-size: 16px; line-height: 1; }

@@ -20,11 +20,14 @@ const AUDIO_SRC = fs.readFileSync("F:/Games/Meme-Game/src/audio.js", "utf8");
 const PROBE_SUFFIX = `
 ;globalThis.__A = {
   initAudio, setVolume, getVolumes, sfx, sfxMat, tone, toneP, noiseP,
+  playBgm, stopBgm, setBgmEnabled, getBgmState, resumeAudio,
   get bus()         { return bus; },
   get AU()          { return AU; },
   get SFX_THROTTLE(){ return SFX_THROTTLE; },
   get sfxCount()    { return sfxCount; },
   get MAX_VOICES()  { return MAX_VOICES; },
+  get BGM_FILES()   { return BGM_FILES; },
+  get _bgm()        { return _bgm; },
 };`;
 
 /* 重要：V8 每次 vm.runInContext 会创建**新**的 Script 实例与新 lexical scope；
@@ -350,5 +353,88 @@ function run(sandbox, runner) {
   ok(r.nodes >= 2, "wall 两类音效各产节点（nodes=" + r.nodes + "）", "nodes " + r.nodes);
 }
 
-console.log("\n" + (fail === 0 ? "✅ W1+W2 音频验收通过" : "❌ 存在失败") + "  (" + pass + " 通过 / " + fail + " 失败)\n");
+/* ---- 15. W3 · BGM 引擎：占位曲可播放且接入 bgm 总线 ---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    const ob = window.__oscCount.get();
+    let threw = null;
+    try { __A.playBgm("menu"); } catch (e) { threw = e.message; }
+    const oscDiff = window.__oscCount.get() - ob;
+    const st = __A.getBgmState();
+    return { threw, oscDiff, cur: st.current, hasTrack: st.hasTrack };
+  }`);
+  ok(!r.threw, "playBgm('menu') 不抛异常", r.threw || "");
+  ok(r.oscDiff > 0, "playBgm 为占位曲排程了振荡器节点 (oscDiff=" + r.oscDiff + ")", "oscDiff=" + r.oscDiff);
+  ok(r.cur === "menu", "当前 BGM 状态置为 menu", "cur=" + r.cur);
+  ok(r.hasTrack, "创建了 bgm 轨道 gain 节点（接 bus.bgm）");
+}
+
+/* ---- 16. W3 · 交叉淡入淡出切换（menu→siege_battle→boss）不抛 + 状态更新 ---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    let threw = null;
+    try { __A.playBgm("menu"); __A.playBgm("siege_battle"); __A.playBgm("boss"); }
+    catch (e) { threw = e.message; }
+    return { threw, cur: __A.getBgmState().current };
+  }`);
+  ok(!r.threw, "连续切换 BGM (menu→siege_battle→boss) 不抛异常", r.threw || "");
+  ok(r.cur === "boss", "最终当前曲为 boss（切换生效）", "cur=" + r.cur);
+}
+
+/* ---- 17. W3 · 降级：setBgmEnabled(false) 后 playBgm 静默、不排程、不出声 ---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    __A.setBgmEnabled(false);
+    const before = window.__oscCount.get();
+    let threw = null;
+    try { __A.playBgm("menu"); } catch (e) { threw = e.message; }
+    const oscDiff = window.__oscCount.get() - before;
+    const st = __A.getBgmState();
+    __A.setBgmEnabled(true);
+    return { threw, oscDiff, enabled: st.enabled, cur: st.current };
+  }`);
+  ok(!r.threw, "BGM 禁用后 playBgm 不抛", r.threw || "");
+  ok(r.oscDiff === 0, "BGM 禁用时 playBgm 不排程任何节点 (oscDiff=" + r.oscDiff + ")", "oscDiff=" + r.oscDiff);
+  ok(r.enabled === false, "getBgmState().enabled 反映禁用状态");
+  ok(r.cur === null, "禁用时当前曲为 null（不强行出声）", "cur=" + r.cur);
+}
+
+/* ---- 18. W3 · 别名映射：playBgm('arena') 映射到 siege_battle 占位 ---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    __A.playBgm("arena");
+    return { cur: __A.getBgmState().current };
+  }`);
+  ok(r.cur === "siege_battle", "playBgm('arena') 映射到 siege_battle 占位", "cur=" + r.cur);
+}
+
+/* ---- 19. W3 · suspended 时 playBgm 进入 pending，首次手势后真正出声 ---- */
+{
+  const { sandbox, events, ctx } = buildSandbox({ state: "suspended" });
+  sandbox.window.__triggerPointerdown = () => {
+    const h = events.add.find(e => e.ev === "pointerdown");
+    if (h) h.fn();
+  };
+  const r = run(sandbox, `{
+    __A.initAudio();
+    __A.playBgm("menu");                 // suspended → 应进 pending
+    const pending = __A.getBgmState().pending;
+    window.__triggerPointerdown();       // 模拟首次手势 → resume → _resumeBgm
+    const st = __A.getBgmState();
+    return { pending, cur: st.current, state: __A.AU.state };
+  }`);
+  ok(r.pending === "menu", "suspended 时 playBgm 进入 pending（不强行排程）", "pending=" + r.pending);
+  ok(r.state === "running", "首次手势后 AU 切 running", "state=" + r.state);
+  ok(r.cur === "menu", "resume 后 pending 的 menu BGM 实际开始（current=menu）", "cur=" + r.cur);
+}
+
+console.log("\n" + (fail === 0 ? "✅ W1+W2+W3 音频验收通过" : "❌ 存在失败") + "  (" + pass + " 通过 / " + fail + " 失败)\n");
 process.exit(fail === 0 ? 0 : 1);

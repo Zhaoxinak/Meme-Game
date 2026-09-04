@@ -56,15 +56,32 @@ function initAudio() {
   bus.sfx.connect(bus.master);
   bus.master.connect(AU.destination);
   // 首次交互再 resume：Chrome / Safari 自动播放策略，合规红线
+  // 注意：必须走 resumeAudio()（resume + 重新触发 pending BGM），不能只调 AU.resume()——
+  // 否则首次手势只把 AU 唤醒，却不会把「suspended 时积压的 menu BGM」真正播出来。
   if (AU.state === "suspended") {
-    const resume = () => {
-      if (AU && AU.state === "suspended") AU.resume();
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
+    const onFirst = () => {
+      resumeAudio();
+      window.removeEventListener("pointerdown", onFirst);
+      window.removeEventListener("keydown", onFirst);
     };
-    window.addEventListener("pointerdown", resume, { once: true });
-    window.addEventListener("keydown", resume, { once: true });
+    window.addEventListener("pointerdown", onFirst, { once: true });
+    window.addEventListener("keydown", onFirst, { once: true });
   }
+}
+
+/* 显式恢复：在已知用户手势内调用（模式按钮 / 页签 / 首帧），比只等下一次点击更快出声。
+   autoplay 合规红线：resume 必须在真实手势内发生，否则某些平台全程静音且无声报错。
+   关键：AU.resume() 在真实浏览器里是**异步**的（返回 Promise），所以必须把 _resumeBgm 挂到
+   resume 的 .then 上——若同步调，AU.state 此刻仍是 suspended，playBgm 会再次把曲子塞回 pending 而永不启动。 */
+function resumeAudio() {
+  if (!AU) return;
+  if (AU.state !== "running") {
+    try {
+      const p = AU.resume();
+      if (p && typeof p.then === "function") p.then(() => _resumeBgm()).catch(() => {});
+      else _resumeBgm();
+    } catch (e) {}
+  } else _resumeBgm();
 }
 
 /* ----- 输出端辅助 ----- */
@@ -288,4 +305,159 @@ function sfx(kind) {
     case "wall_hit":      toneP({ freq0: 120, freq1: 60, dur: 0.12, type: "square", vol: 0.12, detune: false }); noiseBurst({ dur: 0.10, f0: 200, f1: 60, vol: 0.08, q: 0.7, type: "lowpass" }); break;
     case "wall_break":    noiseBurst({ dur: 0.6, f0: 500, f1: 30, vol: 0.18, q: 0.6, type: "lowpass" }); toneP({ freq0: 90, freq1: 30, dur: 0.6, type: "square", vol: 0.12, detune: false }); break;
   }
+}
+
+/* =============================================================================
+ * W3 · BGM 引擎（[PLACEHOLDER] 程序化占位曲）
+ * -----------------------------------------------------------------------------
+ * 真实 BGM 必须由 Soundraw / AIVA 付费订阅生成并导出 OGG（见附录 B §B4），
+ * 本环境无法生成合规音乐文件，故此处交付：
+ *   ① 可替换的 BGM 引擎（playBgm / crossfade / 动态分层接口 / FLAGS.bgm=false 降级）
+ *   ② 3 首程序化占位曲（menu / siege_battle / boss），标 [PLACEHOLDER]，
+ *      上线前把 BGM_FILES[key].file 填成真实路径即可无缝切换，引擎零改动。
+ *
+ * 设计要点（对齐附录 B §B2.3 / §B2.4）：
+ *   - playBgm(key, layer, fade) 签名预留 layer 参数（M0 整曲切换，M3 再上分层 stem）
+ *   - crossfade 1.2s，走各自 trackGain → bus.bgm（与 sfx/master 互不干扰）
+ *   - 外部文件优先：BGM_FILES[key].file 存在则 fetch+decodeAudioData 循环播放，
+ *     失败自动降级到合成占位；无 file 时直接走合成占位
+ *   - FLAGS.bgm === false（或设置面板关闭）→ playBgm 静默返回，游戏照常可玩
+ * =========================================================================== */
+
+const FADE = 1.2;                       // BGM 交叉淡入淡出时长（秒，对齐 §B1.2）
+const _bgm = { current: null, layer: "mid", disabled: false, pending: null, track: null };
+
+/* [PLACEHOLDER] 占位曲规格：midi 音高 + 拍点。仅用于跑通引擎与 G1 验收，非成品音乐。 */
+const BGM_SYNTH = {
+  menu: {                                // 军团集结 · C 大调 100BPM
+    bpm: 100, bpb: 4, bars: 4,
+    voices: [
+      { type: "triangle", vol: 0.11, notes: [[0,36,1],[1,43,1],[2,41,1],[3,40,1]] },
+      { type: "square",   vol: 0.06, notes: [[0,72,0.5],[0.5,76,0.5],[1,79,0.5],[1.5,76,0.5],
+                                              [2,74,0.5],[2.5,77,0.5],[3,81,0.5],[3.5,77,0.5]] },
+    ],
+  },
+  siege_battle: {                        // 铁壁交锋 · D 小调 124BPM
+    bpm: 124, bpb: 4, bars: 4,
+    voices: [
+      { type: "triangle", vol: 0.12, notes: [[0,38,0.5],[0.5,38,0.5],[1,45,0.5],[1.5,45,0.5],
+                                              [2,40,0.5],[2.5,40,0.5],[3,41,0.5],[3.5,41,0.5]] },
+      { type: "square",   vol: 0.07, notes: [[0,62,0.5],[0.5,65,0.5],[1,69,0.5],[1.5,65,0.5],
+                                              [2,67,0.5],[2.5,70,0.5],[3,74,0.5],[3.5,70,0.5]] },
+    ],
+  },
+  boss: {                                // 巨影压境 · E 小调 140BPM
+    bpm: 140, bpb: 4, bars: 4,
+    voices: [
+      { type: "sawtooth", vol: 0.12, notes: [[0,34,1],[1,34,1],[2,41,1],[3,40,1]] },
+      { type: "square",   vol: 0.07, notes: [[0,64,0.25],[0.25,67,0.25],[0.5,71,0.25],[0.75,67,0.25],
+                                              [1,64,0.25],[1.25,67,0.25],[1.5,71,0.25],[1.75,74,0.25],
+                                              [2,64,0.25],[2.25,67,0.25],[2.5,71,0.25],[2.75,74,0.25],
+                                              [3,76,0.25],[3.25,71,0.25],[3.5,67,0.25],[3.75,64,0.25]] },
+    ],
+  },
+};
+
+/* 曲目字典：上线时把 file 填成真实 OGG/MP3 路径即可（外部加载，不内嵌 base64）。 */
+const BGM_FILES = {
+  menu:         { synth: "menu",         title: "军团集结", file: null },  // [PLACEHOLDER]
+  siege_battle: { synth: "siege_battle", title: "铁壁交锋", file: null },  // [PLACEHOLDER]
+  boss:         { synth: "boss",         title: "巨影压境", file: null },  // [PLACEHOLDER]
+};
+
+function _midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+function _schedBgmNote(type, freq, t, dur, vol, out) {
+  if (!AU) return;
+  const o = AU.createOscillator(), g = AU.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  o.connect(g); g.connect(out);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+function _scheduleBgmLoop(key, out, startT) {
+  const d = BGM_SYNTH[key]; if (!d) return 0;
+  const beat = 60 / d.bpm, barLen = beat * d.bpb, loopLen = barLen * d.bars;
+  for (let bar = 0; bar < d.bars; bar++) {
+    const barT = startT + bar * barLen;
+    for (const v of d.voices)
+      for (const nd of v.notes)
+        _schedBgmNote(v.type, _midiToFreq(nd[1]), barT + nd[0] * beat, nd[2] * beat * 0.96, v.vol, out);
+  }
+  return loopLen;
+}
+
+/* FLAGS.bgm 走配置级默认；设置面板关音乐会写 _bgm.disabled 覆盖。 */
+function _bgmEnabled() {
+  if (_bgm.disabled) return false;
+  try { if (typeof FLAGS !== "undefined" && FLAGS.bgm === false) return false; } catch (e) {}
+  return true;
+}
+function _resumeBgm() { if (_bgm.pending) { const k = _bgm.pending; _bgm.pending = null; playBgm(k); } }
+
+/* 外部文件加载 seam：有 file 则 fetch+decode 循环播放，失败降级到合成占位。 */
+function _startBgmFile(key, out, startT) {
+  const url = BGM_FILES[key].file;
+  if (!url || typeof fetch !== "function" || !AU.decodeAudioData)
+    return _scheduleBgmLoop(BGM_FILES[key].synth || key, out, startT);
+  fetch(url).then(r => r.arrayBuffer()).then(buf => AU.decodeAudioData(buf)).then(audioBuf => {
+    if (!AU || AU.state !== "running") return;
+    const src = AU.createBufferSource();
+    src.buffer = audioBuf; src.loop = true; src.connect(out); src.start(startT);
+  }).catch(() => _scheduleBgmLoop(BGM_FILES[key].synth || key, out, startT));
+}
+
+/* 切曲：crossfade 1.2s；同一首幂等；suspended 时挂起 pending。 */
+function playBgm(key, layer = "mid", fade = FADE) {
+  if (!_bgmEnabled()) return;
+  key = ({ arena: "siege_battle" })[key] || key;     // 别名/同调映射（arena 复用战斗占位）
+  if (!BGM_FILES[key]) return;                        // 未知曲名静默忽略
+  if (!AU || AU.state !== "running") { _bgm.pending = key; return; }
+  if (_bgm.current === key && _bgm.track) return;     // 已在播，幂等
+  const t0 = AU.currentTime + 0.02;
+  const g = AU.createGain(); g.gain.value = 0.0001; g.connect(bus.bgm);
+  const loopLen = _scheduleBgmLoop(key, g, t0);
+  let timerId = null;
+  if (typeof setInterval === "function") {            // 浏览器：持续排后续循环；测试台无 setInterval 只排首批
+    let next = t0 + loopLen;
+    timerId = setInterval(() => {
+      if (!AU || AU.state !== "running") return;
+      const ahead = AU.currentTime + 0.4;
+      while (next < ahead) { _scheduleBgmLoop(key, g, next); next += loopLen; }
+    }, 120);
+  }
+  if (BGM_FILES[key].file) _startBgmFile(key, g, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(1, t0 + fade);
+  const old = _bgm.track;
+  _bgm.track = { key, gain: g, timerId };
+  _bgm.current = key; _bgm.layer = layer;
+  if (old && old.gain) {
+    const og = old.gain;
+    try { og.gain.setValueAtTime(og.gain.value || 0.0001, t0); og.gain.linearRampToValueAtTime(0.0001, t0 + fade); } catch (e) {}
+    const stopOld = () => { try { if (old.timerId) clearInterval(old.timerId); og.disconnect(); } catch (e) {} };
+    if (typeof setTimeout === "function") setTimeout(stopOld, fade * 1000 + 60);
+    else stopOld();
+  }
+}
+function stopBgm(fade = FADE) {
+  const old = _bgm.track; _bgm.track = null; _bgm.current = null;
+  if (old && old.gain) {
+    const t0 = AU ? AU.currentTime : 0;
+    try { old.gain.gain.setValueAtTime(old.gain.gain.value || 0.0001, t0); old.gain.gain.linearRampToValueAtTime(0.0001, t0 + fade); } catch (e) {}
+    const stopOld = () => { try { if (old.timerId) clearInterval(old.timerId); old.gain.disconnect(); } catch (e) {} };
+    if (typeof setTimeout === "function") setTimeout(stopOld, fade * 1000 + 60);
+    else stopOld();
+  }
+}
+function setBgmEnabled(on) {
+  _bgm.disabled = !on;
+  if (!on) { stopBgm(); _bgm.pending = null; }
+  else if (_bgm.pending) { const k = _bgm.pending; _bgm.pending = null; playBgm(k); }
+  try { if (typeof FLAGS !== "undefined") FLAGS.bgm = on; } catch (e) {}
+}
+function getBgmState() {
+  return { current: _bgm.current, layer: _bgm.layer, enabled: _bgmEnabled(), disabled: _bgm.disabled, pending: _bgm.pending, hasTrack: !!_bgm.track };
 }

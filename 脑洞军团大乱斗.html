@@ -496,6 +496,52 @@
   .mode-btn.alt .m-tag { background:linear-gradient(90deg,#cfe3f5,#9dc4e8); color:#1a3a5a; }
 
 
+/* ====== style/audio-ui.css ====== */
+/* =============================================================================
+ * audio-ui.css — W3 加载态 + 设置面板 + 齿轮按钮（商业化门面）
+ * -----------------------------------------------------------------------------
+ * 仅覆盖新增 UI，不触碰任何布局。删除整文件即可回滚到无加载态/无设置面板的版本。
+ * ===========================================================================*/
+
+/* ===== 加载态（首屏不白屏）===== */
+#loading {
+  flex-direction: column;
+  transition: opacity .45s ease;
+  font-family: inherit;
+}
+#loading.done { opacity: 0; pointer-events: none; }
+.ld-inner { text-align: center; }
+.ld-logo {
+  font-size: 30px; font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(90deg, #ffe6a8, #f4b860, #ff9f7a);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(244, 184, 96, .4));
+}
+.ld-sub { color: #d8c39e; font-size: 12px; margin-top: 6px; }
+.ld-bar {
+  width: 220px; height: 8px; margin: 16px auto 8px;
+  background: rgba(255, 255, 255, .12); border-radius: 6px; overflow: hidden;
+}
+.ld-fill {
+  width: 0%; height: 100%;
+  background: linear-gradient(90deg, #f4b860, #ff9f7a);
+  transition: width .25s ease;
+}
+.ld-pct { color: #b9a7d6; font-size: 11px; }
+
+/* ===== 设置面板 ===== */
+#settings .set-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 14px 0; color: #e8dcc6; font-size: 14px;
+}
+#settings .set-row label { width: 84px; text-align: right; color: #ffd98a; flex: none; }
+#settings input[type=range] { flex: 1; accent-color: #f4b860; cursor: pointer; }
+#settings .set-row span { width: 48px; color: #b9a7d6; font-size: 12px; flex: none; }
+#settings .btn { margin-top: 8px; }
+#bgm-toggle.off { opacity: .6; }
+#btn-settings { font-size: 16px; line-height: 1; }
+
+
 /* ====== style/responsive.css ====== */
 /* =============================================================================
  * responsive.css — 大屏响应式缩放
@@ -540,6 +586,14 @@
 </head>
 <body>
 <div id="app">
+  <div id="loading" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:#14110f;">
+    <div class="ld-inner">
+      <div class="ld-logo">脑洞军团大乱斗</div>
+      <div class="ld-sub">沙雕自动对战 · 加载中…</div>
+      <div class="ld-bar"><div class="ld-fill" id="ld-fill"></div></div>
+      <div class="ld-pct" id="ld-pct">0%</div>
+    </div>
+  </div>
   <h1>脑洞军团大乱斗</h1>
   <div class="sub">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
   <div id="hud">
@@ -566,6 +620,7 @@
       <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）"><span class="lbl">应援!</span></button>
       <button class="ctl-btn" id="btn-speed" title="切换战斗速度">速度 1×</button>
       <button class="ctl-btn" id="btn-full" title="全屏观看">全屏</button>
+      <button class="ctl-btn" id="btn-settings" title="设置（音量 / 音乐）">⚙</button>
     </div>
     <div class="wall-hud" id="wall-hud" style="display:none;">
       <div class="wseg"><span>上</span><span class="wbar"><span class="wfill" id="wf0" style="width:100%"></span></span></div>
@@ -634,6 +689,9 @@
           <button class="diff-btn on" data-diff="1">标准　<span>设计基准，正常发挥可守到 12-18 波</span></button>
           <button class="diff-btn" data-diff="1.35">硬核　<span>预算 ×1.35，逼你精算每一枚金币</span></button>
         </div>
+        <div style="margin-top:14px;text-align:center;">
+          <button class="btn" id="btn-open-settings">音频设置</button>
+        </div>
       </div>
     </div>
 
@@ -653,6 +711,17 @@
         <h2 id="end-title">结果</h2>
         <div class="desc" id="end-desc" style="text-align:center;"></div>
         <button class="btn" id="btn-again">再来一局</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="settings">
+      <div class="panel">
+        <h2>设置 · 音频</h2>
+        <div class="set-row"><label>主音量</label><input type="range" min="0" max="100" id="vol-master"><span id="vol-master-v">80%</span></div>
+        <div class="set-row"><label>音乐</label><input type="range" min="0" max="100" id="vol-bgm"><span id="vol-bgm-v">60%</span></div>
+        <div class="set-row"><label>音效</label><input type="range" min="0" max="100" id="vol-sfx"><span id="vol-sfx-v">100%</span></div>
+        <div class="set-row"><label>背景音乐</label><button class="btn" id="bgm-toggle">开启</button></div>
+        <button class="btn" id="btn-settings-close">关闭</button>
       </div>
     </div>
   </div>
@@ -808,6 +877,7 @@ const FLAGS = {
   heroUlt:  true,   // v5 §5.4 英雄大招（关掉 = 英雄只有光环，无士气无大招）
   dualAxis: false,  // v5 §2.3 双轴克制（未实现，预留）
   status:   false,  // v4 §7-M2 状态系统（未实现，预留）
+  bgm:      true,   // W3 BGM 总开关（关掉 = 仅音效，游戏照常可玩；见 §B2.4 降级）
 };
 
 /* =========================================================================
@@ -2123,6 +2193,7 @@ function startWave() {
   const isBoss = G.wave % WAVE.bossEvery === 0;
   banner(isBoss ? "第 " + G.wave + " 波 · BOSS 来袭！" : "第 " + G.wave + " 波 · " + G.spawnQueue.length + " 敌军");
   sfx("round");
+  playBgm(isBoss ? "boss" : "siege_battle");   // W3：Boss 波切压迫曲，普通波保持战斗曲（幂等切换）
   updateHud();
 }
 function endWave(win, timeout) {
@@ -4148,15 +4219,32 @@ function initAudio() {
   bus.sfx.connect(bus.master);
   bus.master.connect(AU.destination);
   // 首次交互再 resume：Chrome / Safari 自动播放策略，合规红线
+  // 注意：必须走 resumeAudio()（resume + 重新触发 pending BGM），不能只调 AU.resume()——
+  // 否则首次手势只把 AU 唤醒，却不会把「suspended 时积压的 menu BGM」真正播出来。
   if (AU.state === "suspended") {
-    const resume = () => {
-      if (AU && AU.state === "suspended") AU.resume();
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
+    const onFirst = () => {
+      resumeAudio();
+      window.removeEventListener("pointerdown", onFirst);
+      window.removeEventListener("keydown", onFirst);
     };
-    window.addEventListener("pointerdown", resume, { once: true });
-    window.addEventListener("keydown", resume, { once: true });
+    window.addEventListener("pointerdown", onFirst, { once: true });
+    window.addEventListener("keydown", onFirst, { once: true });
   }
+}
+
+/* 显式恢复：在已知用户手势内调用（模式按钮 / 页签 / 首帧），比只等下一次点击更快出声。
+   autoplay 合规红线：resume 必须在真实手势内发生，否则某些平台全程静音且无声报错。
+   关键：AU.resume() 在真实浏览器里是**异步**的（返回 Promise），所以必须把 _resumeBgm 挂到
+   resume 的 .then 上——若同步调，AU.state 此刻仍是 suspended，playBgm 会再次把曲子塞回 pending 而永不启动。 */
+function resumeAudio() {
+  if (!AU) return;
+  if (AU.state !== "running") {
+    try {
+      const p = AU.resume();
+      if (p && typeof p.then === "function") p.then(() => _resumeBgm()).catch(() => {});
+      else _resumeBgm();
+    } catch (e) {}
+  } else _resumeBgm();
 }
 
 /* ----- 输出端辅助 ----- */
@@ -4382,6 +4470,161 @@ function sfx(kind) {
   }
 }
 
+/* =============================================================================
+ * W3 · BGM 引擎（[PLACEHOLDER] 程序化占位曲）
+ * -----------------------------------------------------------------------------
+ * 真实 BGM 必须由 Soundraw / AIVA 付费订阅生成并导出 OGG（见附录 B §B4），
+ * 本环境无法生成合规音乐文件，故此处交付：
+ *   ① 可替换的 BGM 引擎（playBgm / crossfade / 动态分层接口 / FLAGS.bgm=false 降级）
+ *   ② 3 首程序化占位曲（menu / siege_battle / boss），标 [PLACEHOLDER]，
+ *      上线前把 BGM_FILES[key].file 填成真实路径即可无缝切换，引擎零改动。
+ *
+ * 设计要点（对齐附录 B §B2.3 / §B2.4）：
+ *   - playBgm(key, layer, fade) 签名预留 layer 参数（M0 整曲切换，M3 再上分层 stem）
+ *   - crossfade 1.2s，走各自 trackGain → bus.bgm（与 sfx/master 互不干扰）
+ *   - 外部文件优先：BGM_FILES[key].file 存在则 fetch+decodeAudioData 循环播放，
+ *     失败自动降级到合成占位；无 file 时直接走合成占位
+ *   - FLAGS.bgm === false（或设置面板关闭）→ playBgm 静默返回，游戏照常可玩
+ * =========================================================================== */
+
+const FADE = 1.2;                       // BGM 交叉淡入淡出时长（秒，对齐 §B1.2）
+const _bgm = { current: null, layer: "mid", disabled: false, pending: null, track: null };
+
+/* [PLACEHOLDER] 占位曲规格：midi 音高 + 拍点。仅用于跑通引擎与 G1 验收，非成品音乐。 */
+const BGM_SYNTH = {
+  menu: {                                // 军团集结 · C 大调 100BPM
+    bpm: 100, bpb: 4, bars: 4,
+    voices: [
+      { type: "triangle", vol: 0.11, notes: [[0,36,1],[1,43,1],[2,41,1],[3,40,1]] },
+      { type: "square",   vol: 0.06, notes: [[0,72,0.5],[0.5,76,0.5],[1,79,0.5],[1.5,76,0.5],
+                                              [2,74,0.5],[2.5,77,0.5],[3,81,0.5],[3.5,77,0.5]] },
+    ],
+  },
+  siege_battle: {                        // 铁壁交锋 · D 小调 124BPM
+    bpm: 124, bpb: 4, bars: 4,
+    voices: [
+      { type: "triangle", vol: 0.12, notes: [[0,38,0.5],[0.5,38,0.5],[1,45,0.5],[1.5,45,0.5],
+                                              [2,40,0.5],[2.5,40,0.5],[3,41,0.5],[3.5,41,0.5]] },
+      { type: "square",   vol: 0.07, notes: [[0,62,0.5],[0.5,65,0.5],[1,69,0.5],[1.5,65,0.5],
+                                              [2,67,0.5],[2.5,70,0.5],[3,74,0.5],[3.5,70,0.5]] },
+    ],
+  },
+  boss: {                                // 巨影压境 · E 小调 140BPM
+    bpm: 140, bpb: 4, bars: 4,
+    voices: [
+      { type: "sawtooth", vol: 0.12, notes: [[0,34,1],[1,34,1],[2,41,1],[3,40,1]] },
+      { type: "square",   vol: 0.07, notes: [[0,64,0.25],[0.25,67,0.25],[0.5,71,0.25],[0.75,67,0.25],
+                                              [1,64,0.25],[1.25,67,0.25],[1.5,71,0.25],[1.75,74,0.25],
+                                              [2,64,0.25],[2.25,67,0.25],[2.5,71,0.25],[2.75,74,0.25],
+                                              [3,76,0.25],[3.25,71,0.25],[3.5,67,0.25],[3.75,64,0.25]] },
+    ],
+  },
+};
+
+/* 曲目字典：上线时把 file 填成真实 OGG/MP3 路径即可（外部加载，不内嵌 base64）。 */
+const BGM_FILES = {
+  menu:         { synth: "menu",         title: "军团集结", file: null },  // [PLACEHOLDER]
+  siege_battle: { synth: "siege_battle", title: "铁壁交锋", file: null },  // [PLACEHOLDER]
+  boss:         { synth: "boss",         title: "巨影压境", file: null },  // [PLACEHOLDER]
+};
+
+function _midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+function _schedBgmNote(type, freq, t, dur, vol, out) {
+  if (!AU) return;
+  const o = AU.createOscillator(), g = AU.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  o.connect(g); g.connect(out);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+function _scheduleBgmLoop(key, out, startT) {
+  const d = BGM_SYNTH[key]; if (!d) return 0;
+  const beat = 60 / d.bpm, barLen = beat * d.bpb, loopLen = barLen * d.bars;
+  for (let bar = 0; bar < d.bars; bar++) {
+    const barT = startT + bar * barLen;
+    for (const v of d.voices)
+      for (const nd of v.notes)
+        _schedBgmNote(v.type, _midiToFreq(nd[1]), barT + nd[0] * beat, nd[2] * beat * 0.96, v.vol, out);
+  }
+  return loopLen;
+}
+
+/* FLAGS.bgm 走配置级默认；设置面板关音乐会写 _bgm.disabled 覆盖。 */
+function _bgmEnabled() {
+  if (_bgm.disabled) return false;
+  try { if (typeof FLAGS !== "undefined" && FLAGS.bgm === false) return false; } catch (e) {}
+  return true;
+}
+function _resumeBgm() { if (_bgm.pending) { const k = _bgm.pending; _bgm.pending = null; playBgm(k); } }
+
+/* 外部文件加载 seam：有 file 则 fetch+decode 循环播放，失败降级到合成占位。 */
+function _startBgmFile(key, out, startT) {
+  const url = BGM_FILES[key].file;
+  if (!url || typeof fetch !== "function" || !AU.decodeAudioData)
+    return _scheduleBgmLoop(BGM_FILES[key].synth || key, out, startT);
+  fetch(url).then(r => r.arrayBuffer()).then(buf => AU.decodeAudioData(buf)).then(audioBuf => {
+    if (!AU || AU.state !== "running") return;
+    const src = AU.createBufferSource();
+    src.buffer = audioBuf; src.loop = true; src.connect(out); src.start(startT);
+  }).catch(() => _scheduleBgmLoop(BGM_FILES[key].synth || key, out, startT));
+}
+
+/* 切曲：crossfade 1.2s；同一首幂等；suspended 时挂起 pending。 */
+function playBgm(key, layer = "mid", fade = FADE) {
+  if (!_bgmEnabled()) return;
+  key = ({ arena: "siege_battle" })[key] || key;     // 别名/同调映射（arena 复用战斗占位）
+  if (!BGM_FILES[key]) return;                        // 未知曲名静默忽略
+  if (!AU || AU.state !== "running") { _bgm.pending = key; return; }
+  if (_bgm.current === key && _bgm.track) return;     // 已在播，幂等
+  const t0 = AU.currentTime + 0.02;
+  const g = AU.createGain(); g.gain.value = 0.0001; g.connect(bus.bgm);
+  const loopLen = _scheduleBgmLoop(key, g, t0);
+  let timerId = null;
+  if (typeof setInterval === "function") {            // 浏览器：持续排后续循环；测试台无 setInterval 只排首批
+    let next = t0 + loopLen;
+    timerId = setInterval(() => {
+      if (!AU || AU.state !== "running") return;
+      const ahead = AU.currentTime + 0.4;
+      while (next < ahead) { _scheduleBgmLoop(key, g, next); next += loopLen; }
+    }, 120);
+  }
+  if (BGM_FILES[key].file) _startBgmFile(key, g, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(1, t0 + fade);
+  const old = _bgm.track;
+  _bgm.track = { key, gain: g, timerId };
+  _bgm.current = key; _bgm.layer = layer;
+  if (old && old.gain) {
+    const og = old.gain;
+    try { og.gain.setValueAtTime(og.gain.value || 0.0001, t0); og.gain.linearRampToValueAtTime(0.0001, t0 + fade); } catch (e) {}
+    const stopOld = () => { try { if (old.timerId) clearInterval(old.timerId); og.disconnect(); } catch (e) {} };
+    if (typeof setTimeout === "function") setTimeout(stopOld, fade * 1000 + 60);
+    else stopOld();
+  }
+}
+function stopBgm(fade = FADE) {
+  const old = _bgm.track; _bgm.track = null; _bgm.current = null;
+  if (old && old.gain) {
+    const t0 = AU ? AU.currentTime : 0;
+    try { old.gain.gain.setValueAtTime(old.gain.gain.value || 0.0001, t0); old.gain.gain.linearRampToValueAtTime(0.0001, t0 + fade); } catch (e) {}
+    const stopOld = () => { try { if (old.timerId) clearInterval(old.timerId); old.gain.disconnect(); } catch (e) {} };
+    if (typeof setTimeout === "function") setTimeout(stopOld, fade * 1000 + 60);
+    else stopOld();
+  }
+}
+function setBgmEnabled(on) {
+  _bgm.disabled = !on;
+  if (!on) { stopBgm(); _bgm.pending = null; }
+  else if (_bgm.pending) { const k = _bgm.pending; _bgm.pending = null; playBgm(k); }
+  try { if (typeof FLAGS !== "undefined") FLAGS.bgm = on; } catch (e) {}
+}
+function getBgmState() {
+  return { current: _bgm.current, layer: _bgm.layer, enabled: _bgmEnabled(), disabled: _bgm.disabled, pending: _bgm.pending, hasTrack: !!_bgm.track };
+}
+
 
 /* ====== loop.js ====== */
 /* =============================================================================
@@ -4560,7 +4803,7 @@ function refreshShopUI() {
 }
 document.querySelectorAll("#sd-tabs .shop-tab").forEach(b => {
   b.onclick = () => {
-    initAudio();
+    initAudio(); resumeAudio();
     shopTab = b.dataset.tab;
     document.querySelectorAll("#sd-tabs .shop-tab").forEach(x => x.classList.toggle("on", x === b));
     refreshShopUI();
@@ -4638,6 +4881,7 @@ function showSiegeEnd(win) {
     "<div style='margin-top:8px;font-size:11.5px;color:#9a8f7a;'>* = 超时撤退（敌人未清完但时间到）</div>";
   if (win) { sfx("win"); setTimeout(() => sfx("laugh"), 500); victoryConfetti(); }
   else sfx("lose");
+  playBgm("menu");                       // W3：结算画面回到菜单曲
   $("end").classList.add("show");
 }
 
@@ -4650,6 +4894,7 @@ function startGame(mode) {
   resetGame();
   G.mode = mode;
   G.diffMul = pickDiff;
+  playBgm(mode === "arena" ? "arena" : "siege_battle");   // W3：进模式即切对应 BGM（menu→战斗曲，幂等）
   if (mode === "siege") {
     // 送两个起手兵，避免开局空城的茫然感；真正的第一课是「用 120 金买什么」
     buyUnit("melee"); buyUnit("ranged");
@@ -4675,8 +4920,8 @@ function startGame(mode) {
   document.body.classList.add("playing");
   if (typeof resize === "function") resize();
 }
-$("btn-mode-siege").onclick = () => { initAudio(); startGame("siege"); };
-$("btn-mode-arena").onclick = () => { initAudio(); startGame("arena"); };
+$("btn-mode-siege").onclick = () => { initAudio(); resumeAudio(); startGame("siege"); };
+$("btn-mode-arena").onclick = () => { initAudio(); resumeAudio(); startGame("arena"); };
 document.querySelectorAll(".diff-btn").forEach(b => {
   b.onclick = () => {
     document.querySelectorAll(".diff-btn").forEach(x => x.classList.remove("on"));
@@ -4824,6 +5069,59 @@ resetGame();
 buildCmdBar();
 if (typeof window !== "undefined") { window.addEventListener("resize", resize); resize(); }
 requestAnimationFrame(frame);
+
+/* =============================================================================
+ * W3 · 加载态 + 设置面板 + BGM 启动（详见附录 C · W3 / 附录 B §B2.4）
+ * ===========================================================================*/
+function setLoad(p) {
+  p = Math.max(0, Math.min(100, p));
+  const f = $("ld-fill"); if (f) f.style.width = p + "%";
+  const t = $("ld-pct");  if (t) t.textContent = Math.round(p) + "%";
+}
+function hideLoading() {
+  const el = $("loading"); if (!el) return;
+  el.classList.add("done");
+  if (typeof setTimeout === "function") setTimeout(() => { if (el) el.style.display = "none"; }, 480);
+  else el.style.display = "none";
+}
+function openSettings() {
+  const v = getVolumes();
+  const sm = $("vol-master"), sb = $("vol-bgm"), ss = $("vol-sfx");
+  if (sm) { sm.value = Math.round(v.master * 100); const e = $("vol-master-v"); if (e) e.textContent = Math.round(v.master * 100) + "%"; }
+  if (sb) { sb.value = Math.round(v.bgm * 100);    const e = $("vol-bgm-v");    if (e) e.textContent = Math.round(v.bgm * 100) + "%"; }
+  if (ss) { ss.value = Math.round(v.sfx * 100);    const e = $("vol-sfx-v");    if (e) e.textContent = Math.round(v.sfx * 100) + "%"; }
+  const tg = $("bgm-toggle");
+  if (tg) { const on = getBgmState().enabled; tg.textContent = on ? "开启" : "关闭"; tg.classList.toggle("off", !on); }
+  const s = $("settings"); if (s) s.classList.add("show");
+}
+function closeSettings() { const s = $("settings"); if (s) s.classList.remove("show"); }
+
+/* 按钮接线 */
+const _btnSettings = $("btn-settings");     if (_btnSettings) _btnSettings.onclick = openSettings;
+const _btnSetClose = $("btn-settings-close"); if (_btnSetClose) _btnSetClose.onclick = closeSettings;
+const _btnOpenSet  = $("btn-open-settings");  if (_btnOpenSet)  _btnOpenSet.onclick = openSettings;
+const _vm = $("vol-master"); if (_vm) _vm.oninput = () => { const v = +_vm.value; setVolume("master", v / 100); const e = $("vol-master-v"); if (e) e.textContent = v + "%"; };
+const _vb = $("vol-bgm");    if (_vb) _vb.oninput = () => { const v = +_vb.value; setVolume("bgm", v / 100);    const e = $("vol-bgm-v");    if (e) e.textContent = v + "%"; };
+const _vs = $("vol-sfx");    if (_vs) _vs.oninput = () => { const v = +_vs.value; setVolume("sfx", v / 100);    const e = $("vol-sfx-v");    if (e) e.textContent = v + "%"; };
+const _bgmTg = $("bgm-toggle");
+if (_bgmTg) _bgmTg.onclick = () => {
+  const on = !getBgmState().enabled;
+  setBgmEnabled(on);
+  _bgmTg.textContent = on ? "开启" : "关闭";
+  _bgmTg.classList.toggle("off", !on);
+};
+
+/* 启动序列：创建音频上下文 → 挂起 menu BGM（等首次手势出声）→ 拉加载条 → 揭幕 */
+initAudio();
+playBgm("menu");
+setLoad(20);
+if (typeof requestAnimationFrame === "function") {
+  requestAnimationFrame(() => {
+    setLoad(80);
+    if (typeof setTimeout === "function") setTimeout(() => { setLoad(100); hideLoading(); }, 450);
+    else { setLoad(100); hideLoading(); }
+  });
+} else { setLoad(100); hideLoading(); }
 
 </script>
 </body>

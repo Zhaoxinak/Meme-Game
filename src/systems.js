@@ -279,6 +279,7 @@ function startWave() {
   const isBoss = G.wave % WAVE.bossEvery === 0;
   banner(isBoss ? "第 " + G.wave + " 波 · BOSS 来袭！" : "第 " + G.wave + " 波 · " + G.spawnQueue.length + " 敌军");
   sfx("round");
+  playBgm(isBoss ? "boss" : "siege_battle");   // W3：Boss 波切压迫曲，普通波保持战斗曲（幂等切换）
   updateHud();
 }
 function endWave(win, timeout) {

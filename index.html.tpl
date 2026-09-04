@@ -9,6 +9,14 @@
 </head>
 <body>
 <div id="app">
+  <div id="loading" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:#14110f;">
+    <div class="ld-inner">
+      <div class="ld-logo">脑洞军团大乱斗</div>
+      <div class="ld-sub">沙雕自动对战 · 加载中…</div>
+      <div class="ld-bar"><div class="ld-fill" id="ld-fill"></div></div>
+      <div class="ld-pct" id="ld-pct">0%</div>
+    </div>
+  </div>
   <h1>脑洞军团大乱斗</h1>
   <div class="sub">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
   <div id="hud">
@@ -35,6 +43,7 @@
       <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）"><span class="lbl">应援!</span></button>
       <button class="ctl-btn" id="btn-speed" title="切换战斗速度">速度 1×</button>
       <button class="ctl-btn" id="btn-full" title="全屏观看">全屏</button>
+      <button class="ctl-btn" id="btn-settings" title="设置（音量 / 音乐）">⚙</button>
     </div>
     <div class="wall-hud" id="wall-hud" style="display:none;">
       <div class="wseg"><span>上</span><span class="wbar"><span class="wfill" id="wf0" style="width:100%"></span></span></div>
@@ -103,6 +112,9 @@
           <button class="diff-btn on" data-diff="1">标准　<span>设计基准，正常发挥可守到 12-18 波</span></button>
           <button class="diff-btn" data-diff="1.35">硬核　<span>预算 ×1.35，逼你精算每一枚金币</span></button>
         </div>
+        <div style="margin-top:14px;text-align:center;">
+          <button class="btn" id="btn-open-settings">音频设置</button>
+        </div>
       </div>
     </div>
 
@@ -122,6 +134,17 @@
         <h2 id="end-title">结果</h2>
         <div class="desc" id="end-desc" style="text-align:center;"></div>
         <button class="btn" id="btn-again">再来一局</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="settings">
+      <div class="panel">
+        <h2>设置 · 音频</h2>
+        <div class="set-row"><label>主音量</label><input type="range" min="0" max="100" id="vol-master"><span id="vol-master-v">80%</span></div>
+        <div class="set-row"><label>音乐</label><input type="range" min="0" max="100" id="vol-bgm"><span id="vol-bgm-v">60%</span></div>
+        <div class="set-row"><label>音效</label><input type="range" min="0" max="100" id="vol-sfx"><span id="vol-sfx-v">100%</span></div>
+        <div class="set-row"><label>背景音乐</label><button class="btn" id="bgm-toggle">开启</button></div>
+        <button class="btn" id="btn-settings-close">关闭</button>
       </div>
     </div>
   </div>
