@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="csZ21IKYf6SBlwYwrfCJyL">
-<head data-page-node-id="IMH13tCYytZkA2F3FgNLNj">
-<meta charset="UTF-8" data-page-node-id="3n9CNnyurAfLbuaQ99BoPh">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="uTHtnaRpTE4lfwM6VW3woO">
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>脑洞军团大乱斗 · 沙雕自动对战</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23221a30'/%3E%3Crect x='6' y='2' width='4' height='2' fill='%23ffd479'/%3E%3Crect x='7' y='3' width='2' height='8' fill='%23f7e7c6'/%3E%3Crect x='5' y='11' width='6' height='2' fill='%23e86a33'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%232e1c0c'/%3E%3C/svg%3E" data-page-node-id="eX9iAvXA3SrrjU6NjZ5WB3">
-<style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23221a30'/%3E%3Crect x='6' y='2' width='4' height='2' fill='%23ffd479'/%3E%3Crect x='7' y='3' width='2' height='8' fill='%23f7e7c6'/%3E%3Crect x='5' y='11' width='6' height='2' fill='%23e86a33'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%232e1c0c'/%3E%3C/svg%3E">
+<style>/* ====== style/base.css ====== */
+/* =============================================================================
+ * base.css — 布局骨架 + 竞技场 UI + 全屏规则
+ * ----------------------------------------------------------------------------
+ * 引擎层：html/body 重置、#app/#hud/#arena-wrap 布局、标题、连杀/暴击字、
+ * 升级卡/克制环/路线图/播报/弹幕/控制条/指挥栏、全屏铺满。
+ * 竞技场与守城共用的视觉地基都在这。
+ * ============================================================================= */
+
+
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { height:100%; }
   body {
@@ -327,6 +336,16 @@
   #arena-wrap:fullscreen { width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; background:#0c1422; }
   #arena-wrap:fullscreen canvas { width:auto; height:100%; max-width:100%; }
 
+
+
+/* ====== style/theme.css ====== */
+/* =============================================================================
+ * theme.css — 开罗风统一暖色主题（全局配色覆盖层）
+ * ----------------------------------------------------------------------------
+ * 集中管理的全局换肤：body 背景、#hud/#arena-wrap/panel/btn/card 等暖色覆盖。
+ * 想回滚到原冷色调，整段删除即可，不影响任何布局。
+ * ============================================================================= */
+
   /* ===== 开罗风统一暖色覆盖层（集中管理，整段删除即可回滚原配色） ===== */
   body {
     background:
@@ -366,6 +385,16 @@
   .ctl-btn { border-color:rgba(244,184,96,.4); background:linear-gradient(180deg,#5a4632,#34281c); }
   .ctl-btn.on { background:linear-gradient(180deg,#f4b860,#e0873a); color:#2e1404; }
   .ctl-btn.cheer { background:linear-gradient(180deg,#ffd98a,#f4b860); color:#3a1d05; }
+
+
+
+/* ====== style/siege.css ====== */
+/* =============================================================================
+ * siege.css — 守城远征模式 UI
+ * ----------------------------------------------------------------------------
+ * 守城专属：金库条 / 底部常驻经营条（买兵·科技·修墙·经济）/ 城墙三段血条 /
+ * 结算飘字 / 难度与模式选择按钮。
+ * ============================================================================= */
 
   /* ===== 守城远征模式 UI ===== */
   /* 金库条 */
@@ -465,6 +494,15 @@
   .mode-btn .m-tag { display:inline-block; font-size:11px; padding:1px 8px; border-radius:8px; margin-bottom:6px;
     background:linear-gradient(90deg,#ffd98a,#f4b860); color:#4a2a04; font-weight:900; }
   .mode-btn.alt .m-tag { background:linear-gradient(90deg,#cfe3f5,#9dc4e8); color:#1a3a5a; }
+
+
+/* ====== style/responsive.css ====== */
+/* =============================================================================
+ * responsive.css — 大屏响应式缩放
+ * ----------------------------------------------------------------------------
+ * ≥1280px（含 1080p）整体放大：更易读、更聚焦战斗。
+ * ============================================================================= */
+
   /* ===== 大屏（≥1280px，含 1080p）整体放大：更专业、更聚焦战斗、更易读 ===== */
   @media (min-width:1280px) {
     #hud { font-size:16px; padding:12px 22px; }
@@ -497,36 +535,37 @@
     #bigtext { font-size:62px; }
     .gold-pill { font-size:15px; padding:3px 14px; }
   }
+
 </style>
 </head>
-<body data-page-node-id="vlVSXLiowZ6kF7iYYSuxcd">
-<div id="app" data-page-node-id="5V0LkHOK7LGQXg9c6Wnf8B">
-  <h1 data-page-node-id="HysAYcvEcIe6OgohuDHWY4">脑洞军团大乱斗</h1>
-  <div class="sub" data-page-node-id="BRpIkkLRirh90Y5Bjwbv2K">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
-  <div id="hud" data-page-node-id="p7fcHRnYyYQdUYPcZyGV13">
-    <div class="hud-box" data-page-node-id="nhdK5BUJwFugftxopMV6pJ">
-      <span id="hud-round" data-page-node-id="IClpCy7IJ3Fk8xjKXMegDz">回合 -</span>
-      <span id="hud-size" data-page-node-id="5jEMhIrBQpePmn3lhfIfSu">兵力 -</span>
+<body>
+<div id="app">
+  <h1>脑洞军团大乱斗</h1>
+  <div class="sub">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
+  <div id="hud">
+    <div class="hud-box">
+      <span id="hud-round">回合 -</span>
+      <span id="hud-size">兵力 -</span>
       <span class="gold-pill" id="hud-gold" style="display:none;"><span class="coin"></span><span id="hud-gold-v">0</span></span>
     </div>
-    <div class="hud-box" data-page-node-id="k3Cb70jRlKxPIRmxdxmMbU">
-      <span class="hud-item" data-page-node-id="cFDOW8qXpZhQkxw39DiWc2"><span class="dot blue" data-page-node-id="wzh7yixqHiZ0iERc5Dpb2z"></span>存活 <b id="hud-p-count" data-page-node-id="MwDoA5D1BEA9AMZGJsoqgi">0</b></span>
-      <span class="hud-item" data-page-node-id="hYrWIz605f24hhRTUjr0mf"><span class="dot red" data-page-node-id="fyGxyqqyxbx1YOYMw6Sn2d"></span>存活 <b id="hud-e-count" data-page-node-id="azXNwC5h80TMvmVXq9sXe7">0</b></span>
-      <span class="hud-item" data-page-node-id="9pEpMCb63xRZUYJyoguN7s">比分 <b id="hud-p-score" style="color:#4fc3f7;" data-page-node-id="LP73JFgFp4ecOlZhA0SFCu">0</b> : <b id="hud-e-score" style="color:#ff6a6a;" data-page-node-id="UH3K7DpQleQ9KfAp2CytW3">0</b></span>
-      <span class="hud-item lv-tag" id="hud-p-lv" data-page-node-id="nTYFgKNczSniUcXriuMiDE">近战 Lv1</span>
-      <span class="hud-item lv-tag" id="hud-e-lv" style="color:#ffb0a0;border-color:rgba(255,106,106,.4);background:rgba(255,106,106,.14);" data-page-node-id="BcTy8kKFMAENEY8W79Ipoy">敌 近战 Lv1</span>
+    <div class="hud-box">
+      <span class="hud-item"><span class="dot blue"></span>存活 <b id="hud-p-count">0</b></span>
+      <span class="hud-item"><span class="dot red"></span>存活 <b id="hud-e-count">0</b></span>
+      <span class="hud-item">比分 <b id="hud-p-score" style="color:#4fc3f7;">0</b> : <b id="hud-e-score" style="color:#ff6a6a;">0</b></span>
+      <span class="hud-item lv-tag" id="hud-p-lv">近战 Lv1</span>
+      <span class="hud-item lv-tag" id="hud-e-lv" style="color:#ffb0a0;border-color:rgba(255,106,106,.4);background:rgba(255,106,106,.14);">敌 近战 Lv1</span>
     </div>
   </div>
-  <div id="arena-wrap" data-page-node-id="HWoh5PXDe94yQYaJJ1lDKQ">
-    <canvas id="arena" width="1000" height="520" data-page-node-id="9ctjB83r9mQOWyVDE453Qf"></canvas>
-    <div id="banner" data-page-node-id="XxhIPs3KNytorrVjxzuOnj"></div>
-    <div id="combo" data-page-node-id="8rVQnvZBA34OjbI7XCbeBb"></div>
-    <div id="bigtext" data-page-node-id="KFGAKKCs3n6EJBChF6eXPr"></div>
-    <div class="kill-feed" id="kill-feed" data-page-node-id="4dwsOOUHyK2RKWlvxowNRO"></div>
-    <div class="ctl-bar" data-page-node-id="wPnHB748S3VduQBx6kctQ8">
-      <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）" data-page-node-id="067JsH5pMJhFDxe5Ecaurv"><span class="lbl" data-page-node-id="QCnuPtDCnERyBy6rxaVNlQ">应援!</span></button>
-      <button class="ctl-btn" id="btn-speed" title="切换战斗速度" data-page-node-id="1SyQreDuuwB6mZRXFDoHsX">速度 1×</button>
-      <button class="ctl-btn" id="btn-full" title="全屏观看" data-page-node-id="I69v2khvumqx371owAkJdb">全屏</button>
+  <div id="arena-wrap">
+    <canvas id="arena" width="1000" height="520"></canvas>
+    <div id="banner"></div>
+    <div id="combo"></div>
+    <div id="bigtext"></div>
+    <div class="kill-feed" id="kill-feed"></div>
+    <div class="ctl-bar">
+      <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）"><span class="lbl">应援!</span></button>
+      <button class="ctl-btn" id="btn-speed" title="切换战斗速度">速度 1×</button>
+      <button class="ctl-btn" id="btn-full" title="全屏观看">全屏</button>
     </div>
     <div class="wall-hud" id="wall-hud" style="display:none;">
       <div class="wseg"><span>上</span><span class="wbar"><span class="wfill" id="wf0" style="width:100%"></span></span></div>
@@ -534,10 +573,10 @@
       <div class="wseg"><span>下</span><span class="wbar"><span class="wfill" id="wf2" style="width:100%"></span></span></div>
       <div class="wseg"><span>城</span><span class="wbar"><span class="wfill" id="wf3" style="width:100%;background:linear-gradient(90deg,#ffd479,#e0873a);"></span></span></div>
     </div>
-    <div id="cmd-bar" data-page-node-id="cmdBar"></div>
-    <div id="cmd-hint" data-page-node-id="cmdHint">点击战场释放技能</div>
-    <div class="hint" data-page-node-id="5H4ItSxdSbyuLm4QBZAXkk">空格/双击=加速 · 点指令栏技能→点战场释放（落雷/治疗波）· 应援=增益 · 速度/全屏</div>
-    <div class="commentary" id="commentary" data-page-node-id="oFLgtTPecfRl7FkSZiziWh"></div>
+    <div id="cmd-bar"></div>
+    <div id="cmd-hint">点击战场释放技能</div>
+    <div class="hint">空格/双击=加速 · 点指令栏技能→点战场释放（落雷/治疗波）· 应援=增益 · 速度/全屏</div>
+    <div class="commentary" id="commentary"></div>
 
     <!-- 底部常驻经营条：守城模式专用。买兵 / 科技 / 修墙 / 经济四条经营线全在这里，
          没有「打开商店」这一步——战斗中、喘息期，只要钱够随时可点。 -->
@@ -561,21 +600,21 @@
       <div class="shop-grid" id="shop-grid"></div>
     </div>
 
-    <div class="overlay show" id="menu" data-page-node-id="xA4FYZ2sDOKPj84HtprcqF">
-      <div class="panel" data-page-node-id="CSUlCagpE1CNDumHVstNfE">
-        <h2 data-page-node-id="FSQD3VhA5PlAX4JdQCTLX6">脑洞军团大乱斗</h2>
-        <div class="desc" data-page-node-id="tVnRkYKOmCoVp77IVaBFD4">
-          <b data-page-node-id="iJsl5iFx5XWyBOqDSHVXZM">自动对战：</b>双方同时出兵、全自动开打，但你不是纯看戏——每轮能抽<b data-page-node-id="e31ZxGUyrgAqjBfRGtcV3N">战术卡</b>，战斗中点<b data-page-node-id="V7aeZ5lyI9mFl1fla8FcL2">应援</b>给全军加 Buff。<br data-page-node-id="UWAbokxBnTN2xgQ12DY6bZ">
-          <b data-page-node-id="glnQ11407ZLgs4FoOtsVkQ">兵力递增：</b>每轮 3→6→12→24→30，近战/远程/骑兵各占 1/3（战术卡可加人）。<br data-page-node-id="aQtuW8YFJmucqmitaY9DtY">
-          <b data-page-node-id="OVx9595dx4lcoXA1PqQyyw">总分制：</b>5 轮打完比累计击杀，不看单轮输赢，最后算总账。<br data-page-node-id="U4yZ5jeVYahkbO6hOrKn1Q">
-          <b data-page-node-id="8R2ETIaD1plM9WIT1mBxAC">升级抉择：</b>每轮后能升级兵种线（共 4 次），部分卡还附带战术增益（攻速/血厚/暴躁/应援强化/以众凌寡/克制）。<br data-page-node-id="PCxM2r2Ry0Rc0le8B8V4Ik">
-          <b data-page-node-id="rLoC3Evy6uAIM8APOiCj4Q">三系分支：</b>任意一条线从 <b data-page-node-id="0TqOE6G4VZ99yCeF43gm1v">Lv2 升 Lv3</b> 时，会同时出现「普通 Lv3」和「★分支 Lv3」两张卡让你二选一：<br data-page-node-id="fMWBbVBIBOn6WvaRKcJyH7">
-          <span style="padding-left:14px;" data-page-node-id="2i62A3A0ku8VeGBGvmEOp7">近战 → <b data-page-node-id="CVjai6YHwnNZNwKt43lMNy">大盾步兵</b>（专克远程）、远程 → <b data-page-node-id="T8V6oFXN7KfT0W3epK3i3I">狙击手</b>（专克骑兵）、骑兵 → <b data-page-node-id="AI5TfbjDwGULYLzUNGeGYn">枪骑兵</b>（专克近战）。</span><br data-page-node-id="bxQSQeJQf3kJS1GAnFtkWX">
-          <span style="padding-left:14px;" data-page-node-id="cocNMWcsZhBbGSVwuCzDft">选定分支后沿该分支一路升到 Lv5，一路点同一条分支就能把它拉满。</span><br data-page-node-id="rozgldIIjDpPnphlIoA516">
-          <b data-page-node-id="F7bwZ6WcDIqXt5f7TF1vaq">概率大招：</b>出手时概率怒吼放大招（飞砖/激光/长枪/醉拳…），一击翻盘。<br data-page-node-id="3PmtwUb7oYZ7iEJRnf2y0X">
-          <b data-page-node-id="BHMsqIVlbcENK4mqyMEuuE">克制：</b>近战克骑兵、骑兵克远程、远程克近战（+12% 伤害）。<br data-page-node-id="9iYVMeQWe2nLMr2qGTWn8y">
-          <span style="padding-left:14px;" data-page-node-id="L5eq8sRmFhBuocF6TWvFM6">分支把「本来克你的那个」反手变成你专克的（×2）：大盾＞狙击手＞枪骑兵＞大盾。</span><br data-page-node-id="GmLlb9hhRf8xz9LbkNfXmZ">
-          <b data-page-node-id="mMl7yvzGjcRtQNEapOzItx">操作：</b>左上「战术指挥」选技能→点战场释放（落雷重创敌军 / 治疗波救友军，各有冷却）；空格/双击加速；右上「应援」临时增益；「速度」切 1×/2×/3×；「全屏」铺满。
+    <div class="overlay show" id="menu">
+      <div class="panel">
+        <h2>脑洞军团大乱斗</h2>
+        <div class="desc">
+          <b>自动对战：</b>双方同时出兵、全自动开打，但你不是纯看戏——每轮能抽<b>战术卡</b>，战斗中点<b>应援</b>给全军加 Buff。<br>
+          <b>兵力递增：</b>每轮 3→6→12→24→30，近战/远程/骑兵各占 1/3（战术卡可加人）。<br>
+          <b>总分制：</b>5 轮打完比累计击杀，不看单轮输赢，最后算总账。<br>
+          <b>升级抉择：</b>每轮后能升级兵种线（共 4 次），部分卡还附带战术增益（攻速/血厚/暴躁/应援强化/以众凌寡/克制）。<br>
+          <b>三系分支：</b>任意一条线从 <b>Lv2 升 Lv3</b> 时，会同时出现「普通 Lv3」和「★分支 Lv3」两张卡让你二选一：<br>
+          <span style="padding-left:14px;">近战 → <b>大盾步兵</b>（专克远程）、远程 → <b>狙击手</b>（专克骑兵）、骑兵 → <b>枪骑兵</b>（专克近战）。</span><br>
+          <span style="padding-left:14px;">选定分支后沿该分支一路升到 Lv5，一路点同一条分支就能把它拉满。</span><br>
+          <b>概率大招：</b>出手时概率怒吼放大招（飞砖/激光/长枪/醉拳…），一击翻盘。<br>
+          <b>克制：</b>近战克骑兵、骑兵克远程、远程克近战（+12% 伤害）。<br>
+          <span style="padding-left:14px;">分支把「本来克你的那个」反手变成你专克的（×2）：大盾＞狙击手＞枪骑兵＞大盾。</span><br>
+          <b>操作：</b>左上「战术指挥」选技能→点战场释放（落雷重创敌军 / 治疗波救友军，各有冷却）；空格/双击加速；右上「应援」临时增益；「速度」切 1×/2×/3×；「全屏」铺满。
         </div>
         <div class="mode-btns">
           <button class="mode-btn" id="btn-mode-siege">
@@ -598,28 +637,39 @@
       </div>
     </div>
 
-    <div class="overlay" id="upgrade" data-page-node-id="6cQDL3ifEbG2DHCwsZmtlC">
-      <div class="panel" data-page-node-id="MZFZWHRAx3cSRlXZlzH1jb">
-        <h2 id="up-title" data-page-node-id="xuyz3yYW3CSG1sHJYWur5L">第 X 轮结束！战术抉择</h2>
-        <div class="desc" style="text-align:center;font-size:12px;color:#b9a7d6;" data-page-node-id="YnRPZ5f3woCMrAPRBPf6O0">
+    <div class="overlay" id="upgrade">
+      <div class="panel">
+        <h2 id="up-title">第 X 轮结束！战术抉择</h2>
+        <div class="desc" style="text-align:center;font-size:12px;color:#b9a7d6;">
           每次升级提升整条线属性（生命 +40% / 攻击 +50%）并解锁新兵种与新大招；战术卡给全军永久增益。AI 也在同步变强。
         </div>
-        <div class="cycle" id="cycle-bar" data-page-node-id="cyCLEbar0001"></div>
-        <div class="tree" id="upgrade-grid" data-page-node-id="R7JoPL1JJSR13rW2LC3CIB"></div>
+        <div class="cycle" id="cycle-bar"></div>
+        <div class="tree" id="upgrade-grid"></div>
       </div>
     </div>
 
-    <div class="overlay" id="end" data-page-node-id="nVCAH4tmIzTcEQZBQCAP5E">
-      <div class="panel" data-page-node-id="qeVavo5Ha89EKmvyHYFaxn">
-        <h2 id="end-title" data-page-node-id="ENT5dtLOOQYUdy8ZpWGGfu">结果</h2>
-        <div class="desc" id="end-desc" style="text-align:center;" data-page-node-id="FugroHm71fi41pJwypYGqy"></div>
-        <button class="btn" id="btn-again" data-page-node-id="FfA9hIBYSvLyYxx8ue7EAz">再来一局</button>
+    <div class="overlay" id="end">
+      <div class="panel">
+        <h2 id="end-title">结果</h2>
+        <div class="desc" id="end-desc" style="text-align:center;"></div>
+        <button class="btn" id="btn-again">再来一局</button>
       </div>
     </div>
   </div>
 </div>
-<script>
+<script>/* 拼装产物:本文件由 build.js 把 src/*.js 按依赖顺序拼合而成。
+ * 任何修改请编辑 src/ 下的源文件,不要直接改这个 HTML,build 会覆盖。
+ * 拼装顺序:config.js → state.js → utils.js → combat.js → systems.js → update.js → ui.js → render.js → commentary.js → audio.js → loop.js
+ */
 "use strict";
+
+/* ====== config.js ====== */
+/* =============================================================================
+ * config.js — 平衡配置数据（数值圣经）
+ * 通用配置 + 守城 ECON/WAVE/WALL + 战术指挥 + 六分支兵种/技能/战术/弹幕。
+ * 纯数据，无副作用。改数值前先读注释（每个数都有 rationale）。
+ * ============================================================================= */
+
 /* =========================================================================
    配置（数值设计 rationale —— 每个数都要能解释，不做 magic number）
    对称基线：玩家与 AI 用同一套公式、同一份数据，所以不操作不纠结时就是 50:50。
@@ -1088,6 +1138,15 @@ const COMMENTARY = [
   "解说：一打五？不，是一打全家的希望！", "解说：这大招，策划看了都脸红！",
 ];
 
+
+
+/* ====== state.js ====== */
+/* =============================================================================
+ * state.js — 全局游戏状态 G + 守城状态 + 单位类
+ * 唯一真源 single source of truth。G 是整个游戏的可变状态。
+ * 含 Unit 单位类（位置/血量/寻路/走位）。
+ * ============================================================================= */
+
 /* ================= 全局状态 ================= */
 let G = null;
 let AC = null;
@@ -1215,6 +1274,14 @@ function spawnArmy(side) {
     }
   });
 }
+
+
+
+/* ====== utils.js ====== */
+/* =============================================================================
+ * utils.js — 工具/数学/克制算法 + 粒子对象池
+ * 无状态纯函数（counterMul/compact/findTarget）+ 粒子（对象池 + 原地压缩）。
+ * ============================================================================= */
 
 /* ================= 工具 ================= */
 function compact(arr, keep) { let w = 0; for (let i = 0; i < arr.length; i++) { if (keep(arr[i])) arr[w++] = arr[i]; } arr.length = w; }
@@ -1376,6 +1443,14 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+
+
+/* ====== combat.js ====== */
+/* =============================================================================
+ * combat.js — 攻击与技能结算
+ * 普攻/大招/落雷/治疗波/AOE/克制倍率的战斗数学，双模式共用。
+ * ============================================================================= */
+
 /* ================= 攻击与技能 ================= */
 function popCounter(target) {
   G.texts.push({
@@ -1520,6 +1595,15 @@ function aoeAt(x, y, radius, dmg, owner, knock, knockY) {
     }
   }
 }
+
+
+
+/* ====== systems.js ====== */
+/* =============================================================================
+ * systems.js — 战斗系统：经济/城墙/商店/波次
+ * 五条产金路径 + 城墙主城 + 商店商品表 + 波次生成/流程 + 敌人拆墙决策。
+ * 守城模式的核心运营逻辑（竞技场的回合结算也在此层）。
+ * ============================================================================= */
 
 /* =========================================================================
    守城远征模式（siege）
@@ -1856,6 +1940,15 @@ function siegeShouldHitWall(u, target) {
   const dP = Math.hypot(target.x - u.x, target.y - u.y);
   return dP > dWall;
 }
+
+
+
+/* ====== update.js ====== */
+/* =============================================================================
+ * update.js — 每帧更新（模拟主循环）
+ * update(dt) 推进所有单位/弹道/特效，守城实时相位 + 敌人拆墙。
+ * 只做状态推进，不碰 DOM/Canvas。
+ * ============================================================================= */
 
 /* ================= 更新 ================= */
 function update(dt) {
@@ -2245,6 +2338,14 @@ function aiDrawPerk() {
   G.aiPerk = p.name;
 }
 
+
+
+/* ====== ui.js ====== */
+/* =============================================================================
+ * ui.js — UI / 流程（HUD/菜单/经营条/结算）
+ * DOM 读写、菜单/升级/结算弹窗、底部经营条、HUD 数字刷新。
+ * ============================================================================= */
+
 /* ================= UI / 流程 ================= */
 const $ = id => document.getElementById(id);
 const canvas = $("arena");
@@ -2522,6 +2623,14 @@ function victoryConfetti() {
 function restart() { initAudio(); startGame(lastMode); }
 
 $("btn-again").onclick = restart;
+
+
+
+/* ====== render.js ====== */
+/* =============================================================================
+ * render.js — 渲染（2.5D 投影 / 战场 / 单位 / 城墙 / 特效）
+ * 只读状态画到 Canvas，绝不改状态。当前文件最大，后续可再拆投影/精灵/地面层。
+ * ============================================================================= */
 
 /* ================= 渲染 ================= */
 /* ---- 2.5D 斜投影：世界(x 横向, y 纵深) → 屏幕 ----
@@ -3438,6 +3547,14 @@ function drawVignette() {
   ctx.fillRect(0, 0, CONFIG.worldW, 54);
 }
 
+
+
+/* ====== commentary.js ====== */
+/* =============================================================================
+ * commentary.js — 解说弹幕
+ * 击杀/大招/波次的沙雕解说文案与推送。
+ * ============================================================================= */
+
 /* ================= 解说弹幕 ================= */
 function pushCommentary() {
   const box = document.getElementById("commentary");
@@ -3515,6 +3632,14 @@ function updateDom() {
   refreshCmdUI();   // 每帧刷新指令栏冷却条与选中态
 }
 
+
+
+/* ====== audio.js ====== */
+/* =============================================================================
+ * audio.js — 音效
+ * WebAudio 合成（无外部音频文件），tone/sfx/initAudio。
+ * ============================================================================= */
+
 /* ================= 音效 ================= */
 let AU = null;
 function initAudio() {
@@ -3559,6 +3684,14 @@ function sfx(kind) {
       break;
   }
 }
+
+
+
+/* ====== loop.js ====== */
+/* =============================================================================
+ * loop.js — 启动 + 模式入口 + 主循环
+ * requestAnimationFrame、输入绑定（键盘/点击）、速度缩放、子步积分。入口。
+ * ============================================================================= */
 
 /* =========================================================================
    守城远征：底部常驻经营条 / HUD / 结算
@@ -3990,6 +4123,7 @@ resetGame();
 buildCmdBar();
 if (typeof window !== "undefined") { window.addEventListener("resize", resize); resize(); }
 requestAnimationFrame(frame);
+
 </script>
 </body>
 </html>

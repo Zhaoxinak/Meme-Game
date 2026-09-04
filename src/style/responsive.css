@@ -1,0 +1,39 @@
+/* =============================================================================
+ * responsive.css — 大屏响应式缩放
+ * ----------------------------------------------------------------------------
+ * ≥1280px（含 1080p）整体放大：更易读、更聚焦战斗。
+ * ============================================================================= */
+
+  /* ===== 大屏（≥1280px，含 1080p）整体放大：更专业、更聚焦战斗、更易读 ===== */
+  @media (min-width:1280px) {
+    #hud { font-size:16px; padding:12px 22px; }
+    .hud-box { gap:20px; }
+    .ctl-btn { font-size:15px; padding:9px 18px; }
+    .cmd-btn { width:66px; height:66px; }
+    .cmd-btn .ic { font-size:24px; }
+    .cmd-btn .nm { font-size:12px; }
+    #cmd-hint { font-size:14px; }
+    #shopdock { padding:9px 18px 11px; gap:8px; }
+    #shopdock .sd-res, #shopdock .sd-timer { font-size:14px; }
+    .shop-tab { font-size:14px; padding:6px 18px; }
+    .shop-card { flex-basis:168px; min-width:168px; padding:8px 12px 9px; }
+    .shop-card .s-name { font-size:15px; }
+    .shop-card .s-cost { font-size:14px; }
+    .shop-card .s-desc, .shop-card .s-sub { font-size:12px; line-height:1.5; }
+    .kill-feed { font-size:14px; padding:6px 12px; }
+    .hint { font-size:13px; }
+    .wall-hud { font-size:12px; padding:6px 10px; }
+    .wall-hud .wbar { width:96px; }
+    .panel { max-width:1080px; padding:30px 38px; }
+    .panel h2 { font-size:26px; }
+    .panel .desc { font-size:15px; line-height:2; }
+    .tree-col { max-width:300px; min-width:240px; }
+    .card { width:200px; }
+    .cards.four .card { min-width:200px; max-width:230px; }
+    .commentary .c-line { font-size:15px; }
+    #banner { font-size:46px; }
+    #combo { font-size:42px; }
+    #bigtext { font-size:62px; }
+    .gold-pill { font-size:15px; padding:3px 14px; }
+  }
+
