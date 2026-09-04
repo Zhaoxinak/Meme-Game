@@ -33,7 +33,7 @@ function attack(u, target) {
     }
     return;
   }
-  const cm = counterMul(u, target);
+  const cm = damageMul(u, target);
   let dmg = u.atk * cm * u.buffAtkMul * siegeAtkMul(u);
   // 分支专克命中反馈：飘一个醒目的「克制!」，让 ×2.4 / ×2.6 的定向增伤被玩家真正看见。
   // 只在分支专克（倍率 ≥2）时触发——基础克制 +35% 几乎每一下都在发生，飘字会瞬间刷屏。
@@ -84,7 +84,7 @@ function triggerSkill(u, target) {
       for (const e of G.units) {
         if (e.side === u.side || e.dead) continue;
         if (Math.hypot(e.x - u.x, e.y - u.y) <= sk.radius + e.radius) {
-          damageUnit(e, u.atk * sk.mult * counterMul(u, e), u, sk.knock, sk.knock * 0.9);
+          damageUnit(e, u.atk * sk.mult * damageMul(u, e), u, sk.knock, sk.knock * 0.9);
           addEffect("ring", e.x, e.y, { r: 40, color: "#ffd479", glow: "#ff9f3a" });
         }
       }

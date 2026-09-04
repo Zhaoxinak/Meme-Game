@@ -131,6 +131,7 @@ function makeHero(side, heroKey, level, x, y) {
   return {
     id: nextId++, side, type: "melee", level: lv, branch: null,
     isHero: true, heroKey: def.key,
+    atkType: def.atkType, armorType: def.armorType,   // v5 §2.3 双轴：英雄带真实攻防类型，吃 AT_VS_ARMOR 轴（魔法→英雄0.85 防秒杀）
     x, y, vx: 0, vy: 0, angle: 0, spin: 0,
     hp, maxHp: hp, atk,
     range: base.range, speed: HERO_CFG.speed, atkCdMs: base.atkCdMs,

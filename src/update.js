@@ -103,7 +103,8 @@ function update(dt) {
         u.attackT -= ms;
         if (u.attackT <= 0) {
           u.swing = 0.38;
-          const dm = u.atk * WALL.wallAtkMul;
+          const ax = FLAGS.dualAxis ? armorAxis(atkTypeOf(u), "building") : 1;  // v5 §2.3 城墙吃护甲轴：剑士拆墙慢(0.35)、攻城器拆墙快(2.0)
+          const dm = u.atk * WALL.wallAtkMul * ax;
           if (seg >= 0) damageWall(seg, dm, u); else damageCore(dm, u);
           addEffect("spark", u.x + u.facing * 14, u.y - 8, { color: seg >= 0 ? "#c9b037" : "#ff6a6a" });
           const spdMul2 = modsOf(u.side).atkSpdMul;
@@ -139,7 +140,7 @@ function update(dt) {
         if (u.chargeHit.has(e.id)) continue;
         if (Math.hypot(e.x - u.x, e.y - u.y) < u.radius + e.radius + 8) {
           u.chargeHit.add(e.id);
-          damageUnit(e, u.atk * u.skill.mult * counterMul(u, e), u, u.skill.knock, u.skill.knock * 0.85);
+          damageUnit(e, u.atk * u.skill.mult * damageMul(u, e), u, u.skill.knock, u.skill.knock * 0.85);
           addEffect("ring", e.x, e.y, { r: 36, color: "#ffd479", glow: "#ff9f3a" });
         }
       }

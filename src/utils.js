@@ -26,6 +26,57 @@ function counterMul(atk, def) {
   const bonus = (modsOf(atk.side).counterBonus) || 0;
   return m * (1 + bonus);
 }
+
+/* ================= v5 §2.3 双轴克制：护甲轴 ================= */
+/* 攻击类型 / 护甲类型 不从单位上硬编码字段（除英雄），而是从 战斗身份(type/level/spec)
+   推导，避免每个兵种写死两个字段、又与等级演进耦合。
+   注意：特殊兵种（法师/爆破手/医师）在 systems.js 里是用「基础 type + spec」造的
+   （mage=type ranged + spec mage / sapper=type melee + spec sapper / medic=type ranged + spec medic），
+   所以这里必须用 u.spec 判别，不能用 u.type（u.type 永远是 melee/ranged/cavalry 三基）。
+   推导表就是 战斗内容层深度设计_v5.md §2.4.1 的等级演进：
+     近战 Lv1 木棒=钝击/无甲 → Lv2 剑=斩击/轻甲 → Lv3 矛=穿刺/重甲 → Lv4 拳=钝击/轻甲 → Lv5 酒葫芦=钝击/轻甲
+   其余兵种是单 archetype，不随等级变攻防类型。 */
+function atkTypeOf(u) {
+  if (u.atkType) return u.atkType;                 // 英雄 / 显式覆盖
+  if (u.spec === "mage")   return "magic";         // 法师 = 魔法（u.type 实为 ranged，必须用 spec 判别）
+  if (u.spec === "sapper") return "siege";         // 爆破手 = 攻城（专拆墙，弱于肉搏）
+  if (u.spec === "medic")  return "blunt";         // 医师 = 钝击（支援单位，很少平A）
+  if (u.type === "ranged") return "pierce";        // 远程 = 穿刺（箭/弩）
+  if (u.type === "cavalry")return "blunt";         // 骑兵 = 钝击（践踏/冲撞）
+  if (u.type === "melee") {                         // 近战按等级演进（v5 §2.4.1）
+    const t = ["blunt", "slash", "pierce", "blunt", "blunt"];
+    return t[clamp(u.level || 1, 1, 5) - 1];
+  }
+  return "blunt";
+}
+function armorTypeOf(u) {
+  if (u.armorType) return u.armorType;             // 英雄 = hero / 显式覆盖
+  if (u.spec === "mage")   return "light";         // 法师 = 轻甲
+  if (u.spec === "sapper") return "light";         // 爆破手 = 轻甲
+  if (u.spec === "medic")  return "light";         // 医师 = 轻甲
+  if (u.type === "ranged") return "light";         // 远程 = 轻甲
+  if (u.type === "cavalry")return "heavy";         // 骑兵 = 重甲（冲锋肉盾）
+  if (u.type === "melee") {                         // 近战按等级演进（v5 §2.4.1）
+    const a = ["none", "light", "heavy", "light", "light"];
+    return a[clamp(u.level || 1, 1, 5) - 1];
+  }
+  return "none";
+}
+// 护甲轴单轴倍率：查 AT_VS_ARMOR，带边界保护（未知类型/护甲回退 1，避免 NaN/崩溃）
+function armorAxis(atkType, armorType) {
+  const row = AT_VS_ARMOR[atkType];
+  if (!row) return 1;
+  const v = row[armorType];
+  return typeof v === "number" ? v : 1;
+}
+/* v5 §2.3.5 双轴叠加：轴一(三元环 + 分支专克, counterMul) × 轴二(攻击类型 × 护甲类型, AT_VS_ARMOR)。
+   由 FLAGS.dualAxis 门控：false 时退回纯三元环，旧平衡/旧测试零行为变化（回滚安全网）。
+   对称性：护甲轴是同一张表双侧共用，不进 modsOf(side)，不破坏「对称即公平」纪律。 */
+function damageMul(atk, def) {
+  const ring = counterMul(atk, def);
+  if (!FLAGS.dualAxis) return ring;
+  return ring * armorAxis(atkTypeOf(atk), armorTypeOf(def));
+}
 function findNearest(u) {
   let best = null, bd = 1e9;
   for (const e of G.units) {

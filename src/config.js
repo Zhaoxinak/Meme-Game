@@ -140,7 +140,7 @@ const COMMANDER = { side: "player", type: "melee", branch: null, level: 1, isCom
 const FLAGS = {
   hero:     true,   // v5 §5 英雄系统上场（关掉 = 不出英雄，退回纯军团战）
   heroUlt:  true,   // v5 §5.4 英雄大招（关掉 = 英雄只有光环，无士气无大招）
-  dualAxis: false,  // v5 §2.3 双轴克制（未实现，预留）
+  dualAxis: true,   // v5 §2.3 双轴克制（已实施：counterMul × AT_VS_ARMOR，见 utils.damageMul）
   status:   false,  // v4 §7-M2 状态系统（未实现，预留）
   bgm:      true,   // W3 BGM 总开关（关掉 = 仅音效，游戏照常可玩；见 §B2.4 降级）
 };
@@ -241,6 +241,30 @@ function armySize(round, side) {
 }
 const COUNTER = { melee: "cavalry", cavalry: "ranged", ranged: "melee" };
 const TYPE_NAMES = { melee: "近战", ranged: "远程", cavalry: "骑兵" };
+
+/* =========================================================================
+   v5 §2.3 双轴克制 —— 护甲轴矩阵 AT_VS_ARMOR
+   -------------------------------------------------------------------------
+   行 = 攻击类型(atkType)，列 = 护甲类型(armorType)。
+   「三元环克制」是轴一（由 counterMul 负责）；这是轴二（攻击类型 × 护甲类型）。
+   两轴相乘 = damageMul（见 utils.js）。
+
+   设计铁律（§2.3.6）：矩阵必须「常识驱动」，玩家不需要背表。
+   三个直觉规则覆盖 80% 场景：砍墙没用(斩击→建筑0.35) / 锤子砸铁最疼(钝击→重甲1.25)
+   / 攻城器只拆墙(攻城→建筑2.0 / →单位0.5)。剩下的靠 §3.2 可视化，不靠记忆。
+
+   数值逐项 rationale 见 战斗内容层深度设计_v5.md §2.3.4（每个数都是常识，不写 magic number）。
+   每行常规三列之和（排除 建筑/英雄 两个专职列）：斩击3.00 / 穿刺3.25⚠️ / 钝击3.00 / 魔法3.20⚠️ / 攻城2.75。
+   穿刺/魔法略高是「获取成本换倍率」（穿刺要远程站位、魔法要走特殊编制），详见 spec。 */
+const AT_VS_ARMOR = {
+  slash:  { none: 1.25, light: 1.00, heavy: 0.75, building: 0.35, hero: 1.00 }, // 刀砍没甲最有效；砍铁砍不动(本作最重要常识教学)；剑士拆墙慢
+  pierce: { none: 1.00, light: 1.25, heavy: 1.00, building: 0.50, hero: 1.00 }, // 箭射皮甲(轻甲)最疼；对重甲/无甲中性
+  blunt:  { none: 1.00, light: 0.75, heavy: 1.25, building: 0.75, hero: 1.00 }, // 锤子砸铁最疼(甲越厚越震伤)；轻甲灵活躲得快
+  magic:  { none: 1.00, light: 1.00, heavy: 1.20, building: 0.50, hero: 0.85 }, // 无视护甲但低于钝击1.25，避免成重甲唯一解；英雄抗魔防秒杀
+  siege:  { none: 0.50, light: 0.50, heavy: 0.75, building: 2.00, hero: 0.75 }, // 攻城器专职拆墙(2.0)；→单位仅0.5，防止当主力打架
+};
+const ATK_TYPES   = ["slash", "pierce", "blunt", "magic", "siege"];
+const ARMOR_TYPES = ["none", "light", "heavy", "building", "hero"];
 
 /* 兵种定位（三系职责互补，保证阵容有得选）：
    melee   前排绞肉：血厚、近身，负责顶线。

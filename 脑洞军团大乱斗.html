@@ -895,7 +895,7 @@ const COMMANDER = { side: "player", type: "melee", branch: null, level: 1, isCom
 const FLAGS = {
   hero:     true,   // v5 §5 英雄系统上场（关掉 = 不出英雄，退回纯军团战）
   heroUlt:  true,   // v5 §5.4 英雄大招（关掉 = 英雄只有光环，无士气无大招）
-  dualAxis: false,  // v5 §2.3 双轴克制（未实现，预留）
+  dualAxis: true,   // v5 §2.3 双轴克制（已实施：counterMul × AT_VS_ARMOR，见 utils.damageMul）
   status:   false,  // v4 §7-M2 状态系统（未实现，预留）
   bgm:      true,   // W3 BGM 总开关（关掉 = 仅音效，游戏照常可玩；见 §B2.4 降级）
 };
@@ -996,6 +996,30 @@ function armySize(round, side) {
 }
 const COUNTER = { melee: "cavalry", cavalry: "ranged", ranged: "melee" };
 const TYPE_NAMES = { melee: "近战", ranged: "远程", cavalry: "骑兵" };
+
+/* =========================================================================
+   v5 §2.3 双轴克制 —— 护甲轴矩阵 AT_VS_ARMOR
+   -------------------------------------------------------------------------
+   行 = 攻击类型(atkType)，列 = 护甲类型(armorType)。
+   「三元环克制」是轴一（由 counterMul 负责）；这是轴二（攻击类型 × 护甲类型）。
+   两轴相乘 = damageMul（见 utils.js）。
+
+   设计铁律（§2.3.6）：矩阵必须「常识驱动」，玩家不需要背表。
+   三个直觉规则覆盖 80% 场景：砍墙没用(斩击→建筑0.35) / 锤子砸铁最疼(钝击→重甲1.25)
+   / 攻城器只拆墙(攻城→建筑2.0 / →单位0.5)。剩下的靠 §3.2 可视化，不靠记忆。
+
+   数值逐项 rationale 见 战斗内容层深度设计_v5.md §2.3.4（每个数都是常识，不写 magic number）。
+   每行常规三列之和（排除 建筑/英雄 两个专职列）：斩击3.00 / 穿刺3.25⚠️ / 钝击3.00 / 魔法3.20⚠️ / 攻城2.75。
+   穿刺/魔法略高是「获取成本换倍率」（穿刺要远程站位、魔法要走特殊编制），详见 spec。 */
+const AT_VS_ARMOR = {
+  slash:  { none: 1.25, light: 1.00, heavy: 0.75, building: 0.35, hero: 1.00 }, // 刀砍没甲最有效；砍铁砍不动(本作最重要常识教学)；剑士拆墙慢
+  pierce: { none: 1.00, light: 1.25, heavy: 1.00, building: 0.50, hero: 1.00 }, // 箭射皮甲(轻甲)最疼；对重甲/无甲中性
+  blunt:  { none: 1.00, light: 0.75, heavy: 1.25, building: 0.75, hero: 1.00 }, // 锤子砸铁最疼(甲越厚越震伤)；轻甲灵活躲得快
+  magic:  { none: 1.00, light: 1.00, heavy: 1.20, building: 0.50, hero: 0.85 }, // 无视护甲但低于钝击1.25，避免成重甲唯一解；英雄抗魔防秒杀
+  siege:  { none: 0.50, light: 0.50, heavy: 0.75, building: 2.00, hero: 0.75 }, // 攻城器专职拆墙(2.0)；→单位仅0.5，防止当主力打架
+};
+const ATK_TYPES   = ["slash", "pierce", "blunt", "magic", "siege"];
+const ARMOR_TYPES = ["none", "light", "heavy", "building", "hero"];
 
 /* 兵种定位（三系职责互补，保证阵容有得选）：
    melee   前排绞肉：血厚、近身，负责顶线。
@@ -1433,6 +1457,7 @@ function makeHero(side, heroKey, level, x, y) {
   return {
     id: nextId++, side, type: "melee", level: lv, branch: null,
     isHero: true, heroKey: def.key,
+    atkType: def.atkType, armorType: def.armorType,   // v5 §2.3 双轴：英雄带真实攻防类型，吃 AT_VS_ARMOR 轴（魔法→英雄0.85 防秒杀）
     x, y, vx: 0, vy: 0, angle: 0, spin: 0,
     hp, maxHp: hp, atk,
     range: base.range, speed: HERO_CFG.speed, atkCdMs: base.atkCdMs,
@@ -1624,6 +1649,57 @@ function counterMul(atk, def) {
   // (对称基线，参见 state.js modsOf 设计纪律 — 早期写死 player 是 v5 §0 的 bug)
   const bonus = (modsOf(atk.side).counterBonus) || 0;
   return m * (1 + bonus);
+}
+
+/* ================= v5 §2.3 双轴克制：护甲轴 ================= */
+/* 攻击类型 / 护甲类型 不从单位上硬编码字段（除英雄），而是从 战斗身份(type/level/spec)
+   推导，避免每个兵种写死两个字段、又与等级演进耦合。
+   注意：特殊兵种（法师/爆破手/医师）在 systems.js 里是用「基础 type + spec」造的
+   （mage=type ranged + spec mage / sapper=type melee + spec sapper / medic=type ranged + spec medic），
+   所以这里必须用 u.spec 判别，不能用 u.type（u.type 永远是 melee/ranged/cavalry 三基）。
+   推导表就是 战斗内容层深度设计_v5.md §2.4.1 的等级演进：
+     近战 Lv1 木棒=钝击/无甲 → Lv2 剑=斩击/轻甲 → Lv3 矛=穿刺/重甲 → Lv4 拳=钝击/轻甲 → Lv5 酒葫芦=钝击/轻甲
+   其余兵种是单 archetype，不随等级变攻防类型。 */
+function atkTypeOf(u) {
+  if (u.atkType) return u.atkType;                 // 英雄 / 显式覆盖
+  if (u.spec === "mage")   return "magic";         // 法师 = 魔法（u.type 实为 ranged，必须用 spec 判别）
+  if (u.spec === "sapper") return "siege";         // 爆破手 = 攻城（专拆墙，弱于肉搏）
+  if (u.spec === "medic")  return "blunt";         // 医师 = 钝击（支援单位，很少平A）
+  if (u.type === "ranged") return "pierce";        // 远程 = 穿刺（箭/弩）
+  if (u.type === "cavalry")return "blunt";         // 骑兵 = 钝击（践踏/冲撞）
+  if (u.type === "melee") {                         // 近战按等级演进（v5 §2.4.1）
+    const t = ["blunt", "slash", "pierce", "blunt", "blunt"];
+    return t[clamp(u.level || 1, 1, 5) - 1];
+  }
+  return "blunt";
+}
+function armorTypeOf(u) {
+  if (u.armorType) return u.armorType;             // 英雄 = hero / 显式覆盖
+  if (u.spec === "mage")   return "light";         // 法师 = 轻甲
+  if (u.spec === "sapper") return "light";         // 爆破手 = 轻甲
+  if (u.spec === "medic")  return "light";         // 医师 = 轻甲
+  if (u.type === "ranged") return "light";         // 远程 = 轻甲
+  if (u.type === "cavalry")return "heavy";         // 骑兵 = 重甲（冲锋肉盾）
+  if (u.type === "melee") {                         // 近战按等级演进（v5 §2.4.1）
+    const a = ["none", "light", "heavy", "light", "light"];
+    return a[clamp(u.level || 1, 1, 5) - 1];
+  }
+  return "none";
+}
+// 护甲轴单轴倍率：查 AT_VS_ARMOR，带边界保护（未知类型/护甲回退 1，避免 NaN/崩溃）
+function armorAxis(atkType, armorType) {
+  const row = AT_VS_ARMOR[atkType];
+  if (!row) return 1;
+  const v = row[armorType];
+  return typeof v === "number" ? v : 1;
+}
+/* v5 §2.3.5 双轴叠加：轴一(三元环 + 分支专克, counterMul) × 轴二(攻击类型 × 护甲类型, AT_VS_ARMOR)。
+   由 FLAGS.dualAxis 门控：false 时退回纯三元环，旧平衡/旧测试零行为变化（回滚安全网）。
+   对称性：护甲轴是同一张表双侧共用，不进 modsOf(side)，不破坏「对称即公平」纪律。 */
+function damageMul(atk, def) {
+  const ring = counterMul(atk, def);
+  if (!FLAGS.dualAxis) return ring;
+  return ring * armorAxis(atkTypeOf(atk), armorTypeOf(def));
 }
 function findNearest(u) {
   let best = null, bd = 1e9;
@@ -1924,7 +2000,7 @@ function attack(u, target) {
     }
     return;
   }
-  const cm = counterMul(u, target);
+  const cm = damageMul(u, target);
   let dmg = u.atk * cm * u.buffAtkMul * siegeAtkMul(u);
   // 分支专克命中反馈：飘一个醒目的「克制!」，让 ×2.4 / ×2.6 的定向增伤被玩家真正看见。
   // 只在分支专克（倍率 ≥2）时触发——基础克制 +35% 几乎每一下都在发生，飘字会瞬间刷屏。
@@ -1975,7 +2051,7 @@ function triggerSkill(u, target) {
       for (const e of G.units) {
         if (e.side === u.side || e.dead) continue;
         if (Math.hypot(e.x - u.x, e.y - u.y) <= sk.radius + e.radius) {
-          damageUnit(e, u.atk * sk.mult * counterMul(u, e), u, sk.knock, sk.knock * 0.9);
+          damageUnit(e, u.atk * sk.mult * damageMul(u, e), u, sk.knock, sk.knock * 0.9);
           addEffect("ring", e.x, e.y, { r: 40, color: "#ffd479", glow: "#ff9f3a" });
         }
       }
@@ -2499,7 +2575,8 @@ function update(dt) {
         u.attackT -= ms;
         if (u.attackT <= 0) {
           u.swing = 0.38;
-          const dm = u.atk * WALL.wallAtkMul;
+          const ax = FLAGS.dualAxis ? armorAxis(atkTypeOf(u), "building") : 1;  // v5 §2.3 城墙吃护甲轴：剑士拆墙慢(0.35)、攻城器拆墙快(2.0)
+          const dm = u.atk * WALL.wallAtkMul * ax;
           if (seg >= 0) damageWall(seg, dm, u); else damageCore(dm, u);
           addEffect("spark", u.x + u.facing * 14, u.y - 8, { color: seg >= 0 ? "#c9b037" : "#ff6a6a" });
           const spdMul2 = modsOf(u.side).atkSpdMul;
@@ -2535,7 +2612,7 @@ function update(dt) {
         if (u.chargeHit.has(e.id)) continue;
         if (Math.hypot(e.x - u.x, e.y - u.y) < u.radius + e.radius + 8) {
           u.chargeHit.add(e.id);
-          damageUnit(e, u.atk * u.skill.mult * counterMul(u, e), u, u.skill.knock, u.skill.knock * 0.85);
+          damageUnit(e, u.atk * u.skill.mult * damageMul(u, e), u, u.skill.knock, u.skill.knock * 0.85);
           addEffect("ring", e.x, e.y, { r: 36, color: "#ffd479", glow: "#ff9f3a" });
         }
       }

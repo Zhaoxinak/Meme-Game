@@ -176,10 +176,10 @@ function loadGame(seed) {
   code += `
 ;globalThis.__T = {
   get G(){ return G; },
-  CONFIG, ECON, WAVE, WALL, SHOP,
+  CONFIG, ECON, WAVE, WALL, SHOP, AT_VS_ARMOR,
   // 竞技场（arena）相关：8 轮流程与六分支验证需要
   ROUND_SIZES, TOTAL_ROUNDS, BRANCHES, BRANCH_BY_KEY, BRANCH_COLORS,
-  branchDef, isBranchOn, lineName, lineSkill, counterMul, makeUnit, armySize,
+  branchDef, isBranchOn, lineName, lineSkill, counterMul, damageMul, atkTypeOf, armorTypeOf, armorAxis, makeUnit, armySize,
   startRound, showUpgrade, closeUpgrade, chooseUpgrade, aiUpgrade, renderCycle,
   makeTreeCol, makeForkOpt, showEnd,
   // 英雄系统（v5 §5）：FLAGS 开关 + 英雄读写入口。
