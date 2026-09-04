@@ -48,8 +48,8 @@ function attack(u, target) {
   }
   if (u.type === "ranged") sfx("shoot"); else sfxMat(target);   // 远程保留 shoot 释放音；近战命中按目标护甲走 flesh/armor/wood 三材质
   spawnParticles(target.x, target.y - 8, { count: 3, color: "#fff", speed: 90, life: 0.35, size: 3 });
-  // 大招触发率加成只归我方（atkSpdMul 同理，见 update 里的攻击间隔结算）
-  const scMul = u.side === "player" ? G.mods.skillChanceMul : 1;
+  // 对称纪律（v5 §0）：大招触发率加成走 modsOf(u.side)，AI 抽到「暴躁老哥」才真生效（atkSpdMul 同理）
+  const scMul = modsOf(u.side).skillChanceMul;
   if (u.skillCd <= 0 && Math.random() < CONFIG.skillChance * scMul) {
     triggerSkill(u, target);
   } else if (Math.random() < 0.16) {

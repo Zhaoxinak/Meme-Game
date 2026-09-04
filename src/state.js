@@ -83,9 +83,10 @@ function unitStats(type, level, side) {
   const d = UNIT_DEFS[type];
   // 双方完全对称（玩家/AI 同公式），基线即 50:50。
   // 每级 生命×lvHpMul、攻击×lvAtkMul（见 CONFIG），双方同步缩放避免后期 TTK 爆炸。
-  // 关键：hpMul 是「我方」战术卡增益，必须只给玩家——早期这里漏了 side 判断，
-  // 等于玩家花钱给敌人也加了血，是数值崩坏的元凶之一。
-  const hpMul = side === "player" ? G.mods.hpMul : 1;
+  // 对称纪律（v5 §0）：每侧只用「自己」的战术增益（modsOf(side)），不碰对方的。
+  // 早期写死 G.mods.hpMul（只给玩家）→ AI 抽到「铁血纪律」0 效果，实测玩家乱选也能 67% 胜率。
+  // 改走 modsOf(side) 后，双方战术增益数量对等，胜负只由「选得比 AI 好」+ 应援时机决定。
+  const hpMul = modsOf(side).hpMul;
   const hp = Math.round(d.hp * Math.pow(CONFIG.lvHpMul, level - 1) * hpMul);
   const atk = Math.round(d.atk * Math.pow(CONFIG.lvAtkMul, level - 1));
   return { hp, atk, maxHp: hp };
@@ -159,7 +160,8 @@ function spawnArmy(side) {
   const per = Math.floor(base / 3);
   const extra = base - per * 3; // 余数补到第一系，避免丢兵
   // 人海卡：每系 +sizeBonus（不是总共 +N，否则兵全塞给第一系，与卡面描述不符）
-  const bonus = side === "player" ? G.mods.sizeBonus : 0;
+  // 对称纪律（v5 §0）：人海卡每系 +sizeBonus 也走 modsOf(side)，AI 抽到「以众凌寡」才真生效
+  const bonus = modsOf(side).sizeBonus;
   const lv = side === "player" ? G.playerLv : G.enemyLv;
   const br = side === "player" ? G.playerBranch : G.enemyBranch;
   const order = ["melee", "ranged", "cavalry"];

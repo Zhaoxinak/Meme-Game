@@ -236,7 +236,7 @@ const ROUND_SIZES = [3, 6, 10, 14, 19, 24, 30, 36];
 const TOTAL_ROUNDS = ROUND_SIZES.length;
 // 单方某轮实际兵力（人海卡按「每系 +N」生效，所以总数是 base + N*3）
 function armySize(round, side) {
-  const bonus = side === "player" ? G.mods.sizeBonus : 0;
+  const bonus = modsOf(side).sizeBonus;
   return ROUND_SIZES[round - 1] + bonus * 3;
 }
 const COUNTER = { melee: "cavalry", cavalry: "ranged", ranged: "melee" };
