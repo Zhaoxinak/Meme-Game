@@ -537,6 +537,12 @@
 #settings .set-row label { width: 84px; text-align: right; color: #ffd98a; flex: none; }
 #settings input[type=range] { flex: 1; accent-color: #f4b860; cursor: pointer; }
 #settings .set-row span { width: 48px; color: #b9a7d6; font-size: 12px; flex: none; }
+#settings .set-sel {
+  width: 104px; padding: 5px 8px; font-size: 14px; color: #e8dcc6;
+  background: #2a2118; border: 1px solid rgba(244,184,96,.5); border-radius: 7px;
+  cursor: pointer; outline: none;
+}
+#settings .set-sel:focus { border-color: #ffd98a; }
 #settings .btn { margin-top: 8px; }
 #bgm-toggle.off { opacity: .6; }
 #btn-settings { font-size: 16px; line-height: 1; }
@@ -721,6 +727,20 @@
         <div class="set-row"><label>音乐</label><input type="range" min="0" max="100" id="vol-bgm"><span id="vol-bgm-v">60%</span></div>
         <div class="set-row"><label>音效</label><input type="range" min="0" max="100" id="vol-sfx"><span id="vol-sfx-v">100%</span></div>
         <div class="set-row"><label>背景音乐</label><button class="btn" id="bgm-toggle">开启</button></div>
+        <h2 style="margin-top:14px">设置 · 偏好</h2>
+        <div class="set-row"><label>倍速</label>
+          <select id="set-speed" class="set-sel">
+            <option value="0.5">0.5×</option>
+            <option value="1">1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select></div>
+        <div class="set-row"><label>画质</label>
+          <select id="set-quality" class="set-sel">
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select></div>
         <button class="btn" id="btn-settings-close">关闭</button>
       </div>
     </div>
@@ -728,7 +748,7 @@
 </div>
 <script>/* 拼装产物:本文件由 build.js 把 src/*.js 按依赖顺序拼合而成。
  * 任何修改请编辑 src/ 下的源文件,不要直接改这个 HTML,build 会覆盖。
- * 拼装顺序:config.js → state.js → utils.js → combat.js → systems.js → update.js → ui.js → render.js → commentary.js → audio.js → loop.js
+ * 拼装顺序:config.js → state.js → save.js → utils.js → combat.js → systems.js → update.js → ui.js → render.js → commentary.js → audio.js → loop.js
  */
 "use strict";
 
@@ -1297,14 +1317,14 @@ const modsOf = side => (side === "player" ? G.mods : G.enemyMods);
 
 function resetGame() {
   G = {
-    phase: "menu", round: 1, t: 0, shake: 0, speedMul: 1,
+    phase: "menu", round: 1, t: 0, shake: 0, speedMul: 1, quality: "high", statsRecorded: false,
     playerLv: { melee: 1, ranged: 1, cavalry: 1 },
     enemyLv:  { melee: 1, ranged: 1, cavalry: 1 },
     // 分支选择：null=未走分支；选中后写分支 key（见 BRANCH_BY_KEY），之后该线一直沿分支升到 Lv5
     playerBranch: { melee: null, ranged: null, cavalry: null },
     enemyBranch:  { melee: null, ranged: null, cavalry: null },
     units: [], projectiles: [], effects: [], texts: [], particles: [],
-    pKills: 0, eKills: 0, totalP: 0, totalE: 0, roundKills: [],
+    pKills: 0, eKills: 0, totalP: 0, totalE: 0, cumKills: 0, roundKills: [],
     cmtT: 2.5, bannerT: 0, aiUpgraded: "",
     // 战术卡永久增益（对称基线=1）。玩家与 AI 各有一份，互不干扰：
     // 早期只有玩家有增益，等于战术是纯白赚——实测「随机乱选」也能打出 67% 胜率，
@@ -1468,6 +1488,114 @@ function spawnArmy(side) {
 
 
 
+/* ====== save.js ====== */
+/* =============================================================================
+ * save.js — W4 统一存档（localStorage + 版本迁移）
+ *
+ * 单一键 nd_legion_save_v1 挂全部持久化数据：
+ *   settings 倍速/画质偏好（音量在 audio.js 的 meme.volumes.v1，W1 已交付，不重复管）
+ *   stats    对局统计（总局数/最高波次/累计击杀/胜场）—— Meta 的数据基础
+ *   meta     指挥官天赋树（exp/level/points/spent，§13 企划）
+ *   codex    图鉴（v5 seen/used）
+ *
+ * 设计铁律（附录C §W4）：
+ *   1) version 第一天就写，否则以后改结构会毁档。
+ *   2) migrate 只补字段、不删字段；未知 version 直接回落默认存档。
+ *   3) localStorage 不可用（隐私模式 / 损坏 / 未知 version）一律回落默认，游戏照常可玩 —— 不抛异常。
+ * ============================================================================= */
+
+const SAVE_KEY = "nd_legion_save_v1";
+const SAVE_VERSION = 1;
+
+const SAVE_DEFAULT = {
+  version: SAVE_VERSION,
+  settings: { speed: 1, quality: "high" },       // 倍速/画质偏好（音量见 audio.js）
+  stats:    { games: 0, bestWave: 0, totalKills: 0, wins: 0 },
+  meta:     { exp: 0, level: 1, points: 0, spent: {} },
+  codex:    { seen: {}, used: {} },
+};
+
+let _save = null;                                  // 内存缓存，懒加载
+
+/* 隐私模式 / 禁用时 typeof localStorage === "undefined"，安全返回 null */
+function _storage() {
+  try { return (typeof localStorage !== "undefined" && localStorage) ? localStorage : null; }
+  catch (e) { return null; }
+}
+function _deepDefault() {
+  try { return JSON.parse(JSON.stringify(SAVE_DEFAULT)); }
+  catch (e) {
+    return { version: 1, settings: { speed: 1, quality: "high" },
+             stats: { games: 0, bestWave: 0, totalKills: 0, wins: 0 },
+             meta: { exp: 0, level: 1, points: 0, spent: {} },
+             codex: { seen: {}, used: {} } };
+  }
+}
+
+/* 迁移链：v1→v2→… 未来只在此补字段。未知 version 一律回落默认（W4 验收点）。 */
+function _migrate(raw) {
+  if (!raw || typeof raw !== "object") return _deepDefault();
+  if (raw.version !== SAVE_VERSION) return _deepDefault();   // 未知版本 → 默认，不崩
+  const out = _deepDefault();
+  if (raw.settings) Object.assign(out.settings, raw.settings);
+  if (raw.stats)    Object.assign(out.stats,    raw.stats);
+  if (raw.meta)   { Object.assign(out.meta, raw.meta); if (raw.meta.spent) Object.assign(out.meta.spent, raw.meta.spent); }
+  if (raw.codex) { if (raw.codex.seen) Object.assign(out.codex.seen, raw.codex.seen);
+                   if (raw.codex.used) Object.assign(out.codex.used, raw.codex.used); }
+  out.version = SAVE_VERSION;                                // 永远写回当前版本
+  return out;
+}
+
+function loadSave() {
+  const st = _storage();
+  if (!st) return _deepDefault();                            // 无存储 → 默认（游戏照常玩）
+  try {
+    const raw = st.getItem(SAVE_KEY);
+    if (!raw) return _deepDefault();
+    return _migrate(JSON.parse(raw));
+  } catch (e) { return _deepDefault(); }                     // 损坏 JSON → 默认
+}
+
+function getSave() { if (!_save) _save = loadSave(); return _save; }
+
+function saveSave(s) {
+  if (s) _save = s;
+  if (!_save) return;
+  const st = _storage();
+  if (!st) return;                                           // 无存储 → 仅内存，不崩
+  try { st.setItem(SAVE_KEY, JSON.stringify(_save)); } catch (e) {}
+}
+
+/* 便捷更新 + 落盘（mutator 直接改传入的 save 对象） */
+function updateSave(mut) { const s = getSave(); mut(s); saveSave(s); return s; }
+
+/* 设置读写（倍速/画质） */
+function setSetting(k, v) { return updateSave(s => { s.settings[k] = v; }); }
+function getSetting(k)    { return getSave().settings[k]; }
+
+/* 记录一局结果（siege / arena 通用）。
+ *   reached : 到达波次 / 轮次（siege=WAVE.totalWaves 或阵亡波-1；arena=TOTAL_ROUNDS）
+ *   win     : 是否胜利
+ *   kills   : 玩家方累计击杀（G.pKills / G.totalP）
+ * 同时累加 Meta 经验（企划 §13：胜/负 + 击杀 + 轮次表现给经验）。
+ * 等级曲线（每级所需 exp = 100 × 当前等级）为 [PLACEHOLDER · 需 playtest 定级经验需求与曲线]。 */
+function recordGame({ reached, win, kills }) {
+  return updateSave(s => {
+    s.stats.games += 1;
+    s.stats.wins  += win ? 1 : 0;
+    s.stats.bestWave    = Math.max(s.stats.bestWave || 0, reached || 0);
+    s.stats.totalKills  = (s.stats.totalKills || 0) + (kills || 0);
+    const gained = (win ? 50 : 15) + (kills || 0) + (reached || 0) * 3;
+    s.meta.exp += gained;
+    while (s.meta.exp >= 100 * s.meta.level) {
+      s.meta.exp -= 100 * s.meta.level;
+      s.meta.level += 1;
+      s.meta.points += 1;
+    }
+  });
+}
+
+
 /* ====== utils.js ====== */
 /* =============================================================================
  * utils.js — 工具/数学/克制算法 + 粒子对象池
@@ -1581,7 +1709,7 @@ function damageUnit(u, dmg, attacker, knock, knockY) {
 }
 function finishKill(u, attacker) {
   u.dying = true; u.dead = true; u.state = "dead"; u.stateT = 1.4;
-  if (attacker.side === "player") { G.pKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
+  if (attacker.side === "player") { G.pKills++; G.cumKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
   else G.eKills++;
   // 英雄士气（己方任意单位击杀 → 该侧英雄 + moralePerKill，避免英雄抢人头成最优解）
   if (FLAGS.hero && FLAGS.heroUlt && attacker && attacker.side && !u.isHero) {
@@ -2226,6 +2354,8 @@ function siegeWin() {
   G.siegeOver = true;
   G.phase2 = "over";
   G.phase = "result";
+  // W4 存档：守城通关记一次统计 + Meta 经验（到达=总波数）
+  recordGame({ reached: WAVE.totalWaves, win: true, kills: G.cumKills });
   syncShopDock();          // 结算时收起经营条，把战场空间还回来
   showSiegeEnd(true);
 }
@@ -2234,6 +2364,8 @@ function siegeLose() {
   G.siegeOver = true;
   G.phase2 = "over";
   G.phase = "result";
+  // W4 存档：守城失败也记一次统计 + Meta 经验（到达=阵亡波-1）
+  recordGame({ reached: Math.max(0, G.wave - 1), win: false, kills: G.cumKills });
   banner("主城陷落！");
   syncShopDock();          // 结算时收起经营条
   shake(1.0); sfx("lose");
@@ -2957,6 +3089,8 @@ function closeUpgrade() { $("upgrade").classList.remove("show"); }
 function showEnd() {
   const title = $("end-title"), desc = $("end-desc");
   const won = G.totalP >= G.totalE;
+  // W4 存档：竞技场整局结算记一次统计 + Meta 经验（守卫防 setTime 重入重复计数）
+  if (!G.statsRecorded) { recordGame({ reached: TOTAL_ROUNDS, win: won, kills: G.cumKills }); G.statsRecorded = true; }
   // 评级阈值按「总兵力」等比缩放：8 轮单方合计 142 兵（原 5 轮 75 兵，×1.89），
   // 沿用旧阈值会让每局都轻松 S。这里按同样的击杀率换算：60→110 / 45→85 / 30→56 / 15→28。
   let grade = "D";
@@ -4894,6 +5028,10 @@ function startGame(mode) {
   $("end").classList.remove("show");
   $("upgrade").classList.remove("show");
   resetGame();
+  // W4 存档：入局应用倍速/画质偏好（持久化的设置）
+  const _sp = (typeof getSetting === "function") ? getSetting("speed") : 1;
+  G.speedMul = (_sp === 0.5 || _sp === 1 || _sp === 1.5 || _sp === 2) ? _sp : 1;
+  G.quality  = (typeof getSetting === "function") ? (getSetting("quality") || "high") : "high";
   G.mode = mode;
   G.diffMul = pickDiff;
   playBgm(mode === "arena" ? "arena" : "siege_battle");   // W3：进模式即切对应 BGM（menu→战斗曲，幂等）
@@ -5094,6 +5232,8 @@ function openSettings() {
   if (ss) { ss.value = Math.round(v.sfx * 100);    const e = $("vol-sfx-v");    if (e) e.textContent = Math.round(v.sfx * 100) + "%"; }
   const tg = $("bgm-toggle");
   if (tg) { const on = getBgmState().enabled; tg.textContent = on ? "开启" : "关闭"; tg.classList.toggle("off", !on); }
+  const sp = $("set-speed");    if (sp) sp.value = String(getSetting("speed") || 1);
+  const q = $("set-quality");   if (q)  q.value  = getSetting("quality") || "high";
   const s = $("settings"); if (s) s.classList.add("show");
 }
 function closeSettings() { const s = $("settings"); if (s) s.classList.remove("show"); }
@@ -5111,6 +5251,20 @@ if (_bgmTg) _bgmTg.onclick = () => {
   setBgmEnabled(on);
   _bgmTg.textContent = on ? "开启" : "关闭";
   _bgmTg.classList.toggle("off", !on);
+};
+/* W4 存档：倍速/画质偏好实时生效并持久化 */
+const _sp = $("set-speed");
+if (_sp) _sp.onchange = () => {
+  const v = parseFloat(_sp.value);
+  setSetting("speed", v);
+  if (G && (G.phase === "playing" || G.phase === "battle" || G.phase === "result")) {
+    G.speedMul = (v === 0.5 || v === 1 || v === 1.5 || v === 2) ? v : 1;
+  }
+};
+const _q = $("set-quality");
+if (_q) _q.onchange = () => {
+  setSetting("quality", _q.value);
+  if (G) G.quality = _q.value;          // 渲染降档效果 [PLACEHOLDER · 待 render 接入]
 };
 
 /* 启动序列：创建音频上下文 → 挂起 menu BGM（等首次手势出声）→ 拉加载条 → 揭幕 */

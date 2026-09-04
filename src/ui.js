@@ -233,6 +233,8 @@ function closeUpgrade() { $("upgrade").classList.remove("show"); }
 function showEnd() {
   const title = $("end-title"), desc = $("end-desc");
   const won = G.totalP >= G.totalE;
+  // W4 存档：竞技场整局结算记一次统计 + Meta 经验（守卫防 setTime 重入重复计数）
+  if (!G.statsRecorded) { recordGame({ reached: TOTAL_ROUNDS, win: won, kills: G.cumKills }); G.statsRecorded = true; }
   // 评级阈值按「总兵力」等比缩放：8 轮单方合计 142 兵（原 5 轮 75 兵，×1.89），
   // 沿用旧阈值会让每局都轻松 S。这里按同样的击杀率换算：60→110 / 45→85 / 30→56 / 15→28。
   let grade = "D";

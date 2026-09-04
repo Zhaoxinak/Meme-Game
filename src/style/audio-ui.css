@@ -38,6 +38,12 @@
 #settings .set-row label { width: 84px; text-align: right; color: #ffd98a; flex: none; }
 #settings input[type=range] { flex: 1; accent-color: #f4b860; cursor: pointer; }
 #settings .set-row span { width: 48px; color: #b9a7d6; font-size: 12px; flex: none; }
+#settings .set-sel {
+  width: 104px; padding: 5px 8px; font-size: 14px; color: #e8dcc6;
+  background: #2a2118; border: 1px solid rgba(244,184,96,.5); border-radius: 7px;
+  cursor: pointer; outline: none;
+}
+#settings .set-sel:focus { border-color: #ffd98a; }
 #settings .btn { margin-top: 8px; }
 #bgm-toggle.off { opacity: .6; }
 #btn-settings { font-size: 16px; line-height: 1; }

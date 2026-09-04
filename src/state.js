@@ -15,14 +15,14 @@ const modsOf = side => (side === "player" ? G.mods : G.enemyMods);
 
 function resetGame() {
   G = {
-    phase: "menu", round: 1, t: 0, shake: 0, speedMul: 1,
+    phase: "menu", round: 1, t: 0, shake: 0, speedMul: 1, quality: "high", statsRecorded: false,
     playerLv: { melee: 1, ranged: 1, cavalry: 1 },
     enemyLv:  { melee: 1, ranged: 1, cavalry: 1 },
     // 分支选择：null=未走分支；选中后写分支 key（见 BRANCH_BY_KEY），之后该线一直沿分支升到 Lv5
     playerBranch: { melee: null, ranged: null, cavalry: null },
     enemyBranch:  { melee: null, ranged: null, cavalry: null },
     units: [], projectiles: [], effects: [], texts: [], particles: [],
-    pKills: 0, eKills: 0, totalP: 0, totalE: 0, roundKills: [],
+    pKills: 0, eKills: 0, totalP: 0, totalE: 0, cumKills: 0, roundKills: [],
     cmtT: 2.5, bannerT: 0, aiUpgraded: "",
     // 战术卡永久增益（对称基线=1）。玩家与 AI 各有一份，互不干扰：
     // 早期只有玩家有增益，等于战术是纯白赚——实测「随机乱选」也能打出 67% 胜率，

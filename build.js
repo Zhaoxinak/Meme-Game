@@ -23,6 +23,7 @@ const OUTPUT    = path.join(ROOT, "脑洞军团大乱斗.html");
 const JS_ORDER = [
   "config.js",
   "state.js",
+  "save.js",
   "utils.js",
   "combat.js",
   "systems.js",

@@ -263,6 +263,10 @@ function startGame(mode) {
   $("end").classList.remove("show");
   $("upgrade").classList.remove("show");
   resetGame();
+  // W4 存档：入局应用倍速/画质偏好（持久化的设置）
+  const _sp = (typeof getSetting === "function") ? getSetting("speed") : 1;
+  G.speedMul = (_sp === 0.5 || _sp === 1 || _sp === 1.5 || _sp === 2) ? _sp : 1;
+  G.quality  = (typeof getSetting === "function") ? (getSetting("quality") || "high") : "high";
   G.mode = mode;
   G.diffMul = pickDiff;
   playBgm(mode === "arena" ? "arena" : "siege_battle");   // W3：进模式即切对应 BGM（menu→战斗曲，幂等）
@@ -463,6 +467,8 @@ function openSettings() {
   if (ss) { ss.value = Math.round(v.sfx * 100);    const e = $("vol-sfx-v");    if (e) e.textContent = Math.round(v.sfx * 100) + "%"; }
   const tg = $("bgm-toggle");
   if (tg) { const on = getBgmState().enabled; tg.textContent = on ? "开启" : "关闭"; tg.classList.toggle("off", !on); }
+  const sp = $("set-speed");    if (sp) sp.value = String(getSetting("speed") || 1);
+  const q = $("set-quality");   if (q)  q.value  = getSetting("quality") || "high";
   const s = $("settings"); if (s) s.classList.add("show");
 }
 function closeSettings() { const s = $("settings"); if (s) s.classList.remove("show"); }
@@ -480,6 +486,20 @@ if (_bgmTg) _bgmTg.onclick = () => {
   setBgmEnabled(on);
   _bgmTg.textContent = on ? "开启" : "关闭";
   _bgmTg.classList.toggle("off", !on);
+};
+/* W4 存档：倍速/画质偏好实时生效并持久化 */
+const _sp = $("set-speed");
+if (_sp) _sp.onchange = () => {
+  const v = parseFloat(_sp.value);
+  setSetting("speed", v);
+  if (G && (G.phase === "playing" || G.phase === "battle" || G.phase === "result")) {
+    G.speedMul = (v === 0.5 || v === 1 || v === 1.5 || v === 2) ? v : 1;
+  }
+};
+const _q = $("set-quality");
+if (_q) _q.onchange = () => {
+  setSetting("quality", _q.value);
+  if (G) G.quality = _q.value;          // 渲染降档效果 [PLACEHOLDER · 待 render 接入]
 };
 
 /* 启动序列：创建音频上下文 → 挂起 menu BGM（等首次手势出声）→ 拉加载条 → 揭幕 */

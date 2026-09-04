@@ -144,6 +144,20 @@
         <div class="set-row"><label>音乐</label><input type="range" min="0" max="100" id="vol-bgm"><span id="vol-bgm-v">60%</span></div>
         <div class="set-row"><label>音效</label><input type="range" min="0" max="100" id="vol-sfx"><span id="vol-sfx-v">100%</span></div>
         <div class="set-row"><label>背景音乐</label><button class="btn" id="bgm-toggle">开启</button></div>
+        <h2 style="margin-top:14px">设置 · 偏好</h2>
+        <div class="set-row"><label>倍速</label>
+          <select id="set-speed" class="set-sel">
+            <option value="0.5">0.5×</option>
+            <option value="1">1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select></div>
+        <div class="set-row"><label>画质</label>
+          <select id="set-quality" class="set-sel">
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select></div>
         <button class="btn" id="btn-settings-close">关闭</button>
       </div>
     </div>

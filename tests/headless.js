@@ -193,6 +193,11 @@ function loadGame(seed) {
   countPlayerUnits, waveBudget, waveEnemyLevel, buildWaveQueue, siegeShouldHitWall,
   addGold, taxRate, nextInterest, interestRate, interestCap, killReward,
   startWave, endWave,
+  // W4 存档系统：设置持久化 + 对局统计 + Meta 天赋（单一 localStorage 键 nd_legion_save_v1）。
+  // 不导出这套符号，存档就完全无法被测试台驱动 —— 与英雄系统「无敌僵尸」同源的环境教训。
+  SAVE_KEY, SAVE_VERSION, SAVE_DEFAULT,
+  loadSave, getSave, saveSave, updateSave, setSetting, getSetting, recordGame,
+  siegeWin, siegeLose,
   // 商店已改为底部常驻经营条：toggleShop/showShop/closeShop 一并删除，
   // 现在只有 refreshShopUI（重刷卡片）+ syncShopDock（显隐/高度同步）两个入口。
   refreshShopUI, syncShopDock, hotkeyBuyUnit, onCanvasClick, castCmd,
@@ -210,6 +215,8 @@ function loadGame(seed) {
   return {
     T: sandbox.__T,
     timers,
+    // 暴露 sandbox 本身：集成测试要读 sandbox.localStorage._d 验证存档真的落盘
+    sandbox,
     // 推进 elapsed 秒（游戏内虚拟时间），依次触发到期的 setTimeout
     flush(elapsed) {
       timers.vnow += elapsed;

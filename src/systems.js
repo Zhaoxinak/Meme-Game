@@ -310,6 +310,8 @@ function siegeWin() {
   G.siegeOver = true;
   G.phase2 = "over";
   G.phase = "result";
+  // W4 存档：守城通关记一次统计 + Meta 经验（到达=总波数）
+  recordGame({ reached: WAVE.totalWaves, win: true, kills: G.cumKills });
   syncShopDock();          // 结算时收起经营条，把战场空间还回来
   showSiegeEnd(true);
 }
@@ -318,6 +320,8 @@ function siegeLose() {
   G.siegeOver = true;
   G.phase2 = "over";
   G.phase = "result";
+  // W4 存档：守城失败也记一次统计 + Meta 经验（到达=阵亡波-1）
+  recordGame({ reached: Math.max(0, G.wave - 1), win: false, kills: G.cumKills });
   banner("主城陷落！");
   syncShopDock();          // 结算时收起经营条
   shake(1.0); sfx("lose");

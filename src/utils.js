@@ -110,7 +110,7 @@ function damageUnit(u, dmg, attacker, knock, knockY) {
 }
 function finishKill(u, attacker) {
   u.dying = true; u.dead = true; u.state = "dead"; u.stateT = 1.4;
-  if (attacker.side === "player") { G.pKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
+  if (attacker.side === "player") { G.pKills++; G.cumKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
   else G.eKills++;
   // 英雄士气（己方任意单位击杀 → 该侧英雄 + moralePerKill，避免英雄抢人头成最优解）
   if (FLAGS.hero && FLAGS.heroUlt && attacker && attacker.side && !u.isHero) {
