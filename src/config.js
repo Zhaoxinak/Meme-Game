@@ -334,9 +334,10 @@ const BRANCHES = {
         { name: "万人敌",   type: "charge", mult: 5,   radius: 180, knock: 500, desc: "一骑当千！冲阵斩杀，5倍伤害" },
       ],
       kits: [
-        { helm: "band",  weapon: "sword", w1: "#e8eef7", w2: "#c94f4f", trim: "#c94f4f", metal: "#dfe6f0" },
-        { helm: "band",  weapon: "sword", w1: "#f2f6fc", w2: "#e63946", trim: "#ffd479", metal: "#cdd7e4" },
-        { helm: "mecha", weapon: "sword", w1: "#ffffff", w2: "#ff5a4f", trim: "#ffd479", metal: "#8d99ae" },
+        /* 专精斩马刀「红+锋利」调性——三档都改用 blade 武器，与基础剑形拉开一眼距离 */
+        { helm: "band",  weapon: "blade", w1: "#ff6a55", w2: "#c94f4f", trim: "#c94f4f", metal: "#e8eef7" },
+        { helm: "band",  weapon: "blade", w1: "#ff8470", w2: "#e63946", trim: "#ffd479", metal: "#cdd7e4" },
+        { helm: "mecha", weapon: "blade", w1: "#ff9a85", w2: "#ff5a4f", trim: "#ffd479", metal: "#8d99ae" },
       ],
       desc: "砍骑兵 ×2.4；代价：放弃盾牌，挨远程伤害 +35%",
       trait: { atkMulVs: { cavalry: 2.4 }, takeMoreVs: { ranged: 1.35 } },
@@ -392,9 +393,11 @@ const BRANCHES = {
         { name: "钢铁洪流", type: "aoe",    mult: 5,   radius: 190, knock: 500, desc: "重甲碾轧！大范围5倍伤害+击飞" },
       ],
       kits: [
-        { helm: "bronze", weapon: "lance", w1: "#d6e2ee", w2: "#8a5a30", trim: "#c94f4f", metal: "#c9a227", mount: "horse" },
-        { helm: "great",  weapon: "lance", w1: "#c3cfe0", w2: "#8a5a30", trim: "#c94f4f", metal: "#9aa7c7", mount: "ironhorse" },
-        { helm: "mecha",  weapon: "lance", w1: "#4fc3f7", w2: "#ffe27a", trim: "#4fc3f7", metal: "#8d99ae", mount: "rex" },
+        /* 枪骑兵：纯 lances 但 Lv3+ 加盾（Lv2 base cavalry 已经有盾）——对比感来自盾牌+配色 */
+        { helm: "bronze", weapon: "lance", w1: "#d6e2ee", w2: "#8a5a30", trim: "#c94f4f", metal: "#c9a227", mount: "horse", shield: true },
+        { helm: "great",  weapon: "lance", w1: "#c3cfe0", w2: "#8a5a30", trim: "#c94f4f", metal: "#9aa7c7", mount: "ironhorse", shield: true },
+        /* 铁浮屠：长杆挂小旗（trim 色）——与短杆 lancer Lv3 在视距外即可分辨 */
+        { helm: "mecha",  weapon: "lance", w1: "#4fc3f7", w2: "#ffe27a", trim: "#c94f4f", metal: "#8d99ae", mount: "rex", shield: true },
       ],
       desc: "打近战 ×2.6；代价：移速 -30%",
       trait: { speedMul: 0.7, atkMulVs: { melee: 2.6 } },
@@ -410,9 +413,10 @@ const BRANCHES = {
         { name: "疾风斩阵", type: "aoe",    mult: 5,   radius: 180, knock: 480, desc: "化为一道疾风，大范围5倍伤害" },
       ],
       kits: [
-        { helm: "horn",    weapon: "lance", w1: "#3fd6c0", w2: "#d6e2ee", trim: "#3fd6c0", metal: "#a9713f", mount: "horse" },
-        { helm: "goggles", weapon: "lance", w1: "#3fd6c0", w2: "#e8f7f4", trim: "#e63946", metal: "#4a5468", mount: "moto" },
-        { helm: "mecha",   weapon: "lance", w1: "#7ff0dd", w2: "#ffe27a", trim: "#3fd6c0", metal: "#8d99ae", mount: "rex" },
+        /* 专精飞镰游骑「高速+青绿」调性——三档都改用 scythe 武器，与 lance 形区别一目了然 */
+        { helm: "horn",    weapon: "scythe", w1: "#3fd6c0", w2: "#d6e2ee", trim: "#3fd6c0", metal: "#a9713f", mount: "horse" },
+        { helm: "goggles", weapon: "scythe", w1: "#3fd6c0", w2: "#e8f7f4", trim: "#e63946", metal: "#4a5468", mount: "moto" },
+        { helm: "mecha",   weapon: "scythe", w1: "#7ff0dd", w2: "#ffe27a", trim: "#3fd6c0", metal: "#8d99ae", mount: "rex" },
       ],
       desc: "打远程 ×2.4，移速 +15%；代价：生命 -20%、挨近战伤害 +35%",
       trait: { speedMul: 1.15, hpMul: 0.8, atkMulVs: { ranged: 2.4 }, takeMoreVs: { melee: 1.35 } },

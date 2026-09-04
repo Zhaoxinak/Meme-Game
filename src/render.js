@@ -20,12 +20,24 @@ function applyWorld(wx, wy) {
 }
 function withWorld(wx, wy, fn) { ctx.save(); applyWorld(wx, wy); fn(); ctx.restore(); }
 
+/* ================= 纯代码绘制（无外部素材） =================
+ * 角色 / 武器 / 坐骑全部由 Canvas 矢量代码绘制（见 kairoBody / kairoWeapon / kairoMount）。
+ * 每个兵种通过 kit(u) 取武器 / 头盔 / 盾牌 / 坐骑 / 阵营配色，保证「一眼认得出兵种」。
+ * 不依赖任何 PNG，单文件即开、无 404、无外部授权负担。 */
+
+
+
+/* 状态 -> 程序化演出（见 drawUnit / kairoBody / kairoWeapon）：不使用任何精灵表。 */
+
+function loadSprites() {}
+
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#0b0710"; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.setTransform(VIEW.scale, 0, 0, VIEW.scale, VIEW.ox, VIEW.oy);
+  ctx.imageSmoothingEnabled = false;   // 像素风：全局 nearest（canvas resize 会重置，每帧兜底）
   if (G.shake > 0) ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
   drawGround();
   if (G && G.mode === "siege") drawWall();
@@ -34,7 +46,10 @@ function draw() {
   for (const u of G.units) items.push({ y: u.y, dead: u.state === "dead", wx: u.x, wy: u.y,
     draw: () => {
       if (u.boss || u.elite) ctx.scale(u.boss ? 1.75 : 1.3, u.boss ? 1.75 : 1.3);
-      if (u.state === "dead") drawCorpse(u); else drawUnit(u);
+      if (u.state === "dead") {
+        drawCorpse(u);                                                 // 纯代码：倒地尸体+淡出
+      }
+      else drawUnit(u);
     } });
   for (const e of G.effects) items.push({ y: e.y, dead: false, wx: e.x, wy: e.y, draw: () => drawEffect(e) });
   for (const p of G.projectiles) items.push({ y: p.y, dead: false, wx: p.x, wy: p.y, draw: () => drawProjectile(p) });
@@ -203,6 +218,7 @@ function drawGround() {
   // 中线
   ctx.strokeStyle = "rgba(255,212,121,.35)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
   ctx.beginPath(); ctx.moveTo(W / 2, projY(yTop)); ctx.lineTo(W / 2, projY(yBot)); ctx.stroke(); ctx.setLineDash([]);
+  // 战场贴图覆盖层已停用（v3 改为纯代码绘制棋盘格）；外置 PNG 不再需要
   // 前缘压暗（地面「厚度」）
   const g = ctx.createLinearGradient(0, horizon, 0, PROJ.floor);
   g.addColorStop(0, "rgba(40,30,18,0)");
@@ -286,11 +302,15 @@ function drawUnit(u) {
     ctx.fillRect(-R * 1.5, R * 0.7, R * 3, R * 0.6);
     ctx.restore();
   }
-  if (u.type === "cavalry") kairoMount(u, k);
+  /* 纯代码绘制：根据 kit(u) 为每个兵种戴不同的头盔/持不同的武器/骑不同的坐骑。
+     boss/elite 的放大已在 draw() 里 ctx.scale 过，这里不再二次放大。 */
+  const kc = kit(u);
+  const onMount = !!kc.mount;
+  if (onMount) kairoMount(u, k);
 
-  kairoBody(ctx, u, { bob, armSwing, legL, legR, weaponAng, xEye, mouth, hideLegs: u.type === "cavalry" });
+  kairoBody(ctx, u, { bob, armSwing, legL, legR, weaponAng, xEye, mouth, hideLegs: onMount });
 
-  if (u.type !== "ranged" && u.swing > 0 && u.state !== "knocked") {
+  if (u.swing > 0 && u.state !== "knocked") {
     const S = 0.38, kk = 1 - Math.max(0, u.swing) / S;
     if (kk > 0.3 && kk < 0.62) {
       const w = (kk - 0.3) / 0.32;
@@ -726,6 +746,54 @@ function kairoWeapon(ctx, u, k, c, W) {
       ctx.strokeStyle = OUTLINE; ctx.strokeRect(0.6 * k, -3 * k, 3 * k, 13 * k);
       ctx.fillStyle = m; ctx.fillRect(0.2 * k, 7 * k, 3.8 * k, 2.4 * k);
       break;
+    /* 弯刀（blade 分支）：弧形宽刃——一眼区分于直剑/长矛 */
+    case "blade": {
+      ctx.fillStyle = b; ctx.fillRect(0.8 * k, 6 * k, 2.4 * k, 4 * k);
+      ctx.fillStyle = m; ctx.fillRect(-1.6 * k, 5 * k, 7 * k, 2 * k);
+      ctx.strokeStyle = OUTLINE; ctx.strokeRect(-1.6 * k, 5 * k, 7 * k, 2 * k);
+      // 刀身：弧形三角（宽+弯）
+      ctx.fillStyle = a;
+      ctx.beginPath();
+      ctx.moveTo(2.2 * k, 5.2 * k);
+      ctx.lineTo(-3.2 * k, -10 * k);
+      ctx.lineTo(0.6 * k, -11 * k);
+      ctx.quadraticCurveTo(3 * k, -3 * k, 2.2 * k, 5.2 * k);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1;
+      ctx.stroke();
+      // 刀背高光
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.beginPath();
+      ctx.moveTo(0.5 * k, 4 * k); ctx.lineTo(-2.4 * k, -8 * k); ctx.lineTo(-0.8 * k, -9 * k); ctx.closePath(); ctx.fill();
+      break;
+    }
+    /* 镰刀（scythe 分支）：长杆+弯月刃+内侧刃——一眼区分于 lance */
+    case "scythe": {
+      // 长木杆（更深更长）
+      ctx.fillStyle = b; ctx.fillRect(0.8 * k, -16 * k, 2.4 * k, 26 * k);
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1; ctx.strokeRect(0.8 * k, -16 * k, 2.4 * k, 26 * k);
+      // 弯月刃：从杆顶向右画一道厚弧
+      ctx.fillStyle = a;
+      ctx.beginPath();
+      ctx.moveTo(2 * k, -18 * k);
+      ctx.lineTo(11 * k, -22 * k);
+      ctx.quadraticCurveTo(14 * k, -16 * k, 12 * k, -10 * k);
+      ctx.lineTo(2 * k, -16 * k);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.stroke();
+      // 刃口高光
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.beginPath();
+      ctx.moveTo(3 * k, -18 * k); ctx.lineTo(10 * k, -21 * k); ctx.quadraticCurveTo(12.5 * k, -16 * k, 11 * k, -11 * k);
+      ctx.lineTo(3 * k, -16 * k);
+      ctx.closePath();
+      ctx.fill();
+      // 杆底加固箍（与矛头视觉反差）
+      ctx.fillStyle = t; ctx.fillRect(0.4 * k, -17 * k, 3.4 * k, 2.2 * k);
+      break;
+    }
   }
   if (c.scope) {                       /* 狙击手瞄准镜——造型上区分「远程」与「远程·狙击分支」 */
     ctx.fillStyle = m;

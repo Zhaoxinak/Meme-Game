@@ -70,6 +70,7 @@
     /* --dock-h：底部常驻经营条实测高度（JS 写入）。战场用 padding-bottom 让出这段空间，
        保证经营条永不遮挡单位；0 时（竞技场模式）布局与原来完全一致。 */
     --dock-h:0px;
+    padding-bottom: var(--dock-h, 0px);   /* 真正让位：canvas content box 缩短，dock 恰好占住这段 */
     background:#0c1422; border:none; overflow:hidden;
     box-shadow:0 10px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
   }
@@ -657,6 +658,7 @@
     </div>
   </div>
 </div>
+<script>window.__EMBEDDED={};</script>
 <script>/* 拼装产物:本文件由 build.js 把 src/*.js 按依赖顺序拼合而成。
  * 任何修改请编辑 src/ 下的源文件,不要直接改这个 HTML,build 会覆盖。
  * 拼装顺序:config.js → state.js → utils.js → combat.js → systems.js → update.js → ui.js → render.js → commentary.js → audio.js → loop.js
@@ -1000,9 +1002,10 @@ const BRANCHES = {
         { name: "万人敌",   type: "charge", mult: 5,   radius: 180, knock: 500, desc: "一骑当千！冲阵斩杀，5倍伤害" },
       ],
       kits: [
-        { helm: "band",  weapon: "sword", w1: "#e8eef7", w2: "#c94f4f", trim: "#c94f4f", metal: "#dfe6f0" },
-        { helm: "band",  weapon: "sword", w1: "#f2f6fc", w2: "#e63946", trim: "#ffd479", metal: "#cdd7e4" },
-        { helm: "mecha", weapon: "sword", w1: "#ffffff", w2: "#ff5a4f", trim: "#ffd479", metal: "#8d99ae" },
+        /* 专精斩马刀「红+锋利」调性——三档都改用 blade 武器，与基础剑形拉开一眼距离 */
+        { helm: "band",  weapon: "blade", w1: "#ff6a55", w2: "#c94f4f", trim: "#c94f4f", metal: "#e8eef7" },
+        { helm: "band",  weapon: "blade", w1: "#ff8470", w2: "#e63946", trim: "#ffd479", metal: "#cdd7e4" },
+        { helm: "mecha", weapon: "blade", w1: "#ff9a85", w2: "#ff5a4f", trim: "#ffd479", metal: "#8d99ae" },
       ],
       desc: "砍骑兵 ×2.4；代价：放弃盾牌，挨远程伤害 +35%",
       trait: { atkMulVs: { cavalry: 2.4 }, takeMoreVs: { ranged: 1.35 } },
@@ -1058,9 +1061,11 @@ const BRANCHES = {
         { name: "钢铁洪流", type: "aoe",    mult: 5,   radius: 190, knock: 500, desc: "重甲碾轧！大范围5倍伤害+击飞" },
       ],
       kits: [
-        { helm: "bronze", weapon: "lance", w1: "#d6e2ee", w2: "#8a5a30", trim: "#c94f4f", metal: "#c9a227", mount: "horse" },
-        { helm: "great",  weapon: "lance", w1: "#c3cfe0", w2: "#8a5a30", trim: "#c94f4f", metal: "#9aa7c7", mount: "ironhorse" },
-        { helm: "mecha",  weapon: "lance", w1: "#4fc3f7", w2: "#ffe27a", trim: "#4fc3f7", metal: "#8d99ae", mount: "rex" },
+        /* 枪骑兵：纯 lances 但 Lv3+ 加盾（Lv2 base cavalry 已经有盾）——对比感来自盾牌+配色 */
+        { helm: "bronze", weapon: "lance", w1: "#d6e2ee", w2: "#8a5a30", trim: "#c94f4f", metal: "#c9a227", mount: "horse", shield: true },
+        { helm: "great",  weapon: "lance", w1: "#c3cfe0", w2: "#8a5a30", trim: "#c94f4f", metal: "#9aa7c7", mount: "ironhorse", shield: true },
+        /* 铁浮屠：长杆挂小旗（trim 色）——与短杆 lancer Lv3 在视距外即可分辨 */
+        { helm: "mecha",  weapon: "lance", w1: "#4fc3f7", w2: "#ffe27a", trim: "#c94f4f", metal: "#8d99ae", mount: "rex", shield: true },
       ],
       desc: "打近战 ×2.6；代价：移速 -30%",
       trait: { speedMul: 0.7, atkMulVs: { melee: 2.6 } },
@@ -1076,9 +1081,10 @@ const BRANCHES = {
         { name: "疾风斩阵", type: "aoe",    mult: 5,   radius: 180, knock: 480, desc: "化为一道疾风，大范围5倍伤害" },
       ],
       kits: [
-        { helm: "horn",    weapon: "lance", w1: "#3fd6c0", w2: "#d6e2ee", trim: "#3fd6c0", metal: "#a9713f", mount: "horse" },
-        { helm: "goggles", weapon: "lance", w1: "#3fd6c0", w2: "#e8f7f4", trim: "#e63946", metal: "#4a5468", mount: "moto" },
-        { helm: "mecha",   weapon: "lance", w1: "#7ff0dd", w2: "#ffe27a", trim: "#3fd6c0", metal: "#8d99ae", mount: "rex" },
+        /* 专精飞镰游骑「高速+青绿」调性——三档都改用 scythe 武器，与 lance 形区别一目了然 */
+        { helm: "horn",    weapon: "scythe", w1: "#3fd6c0", w2: "#d6e2ee", trim: "#3fd6c0", metal: "#a9713f", mount: "horse" },
+        { helm: "goggles", weapon: "scythe", w1: "#3fd6c0", w2: "#e8f7f4", trim: "#e63946", metal: "#4a5468", mount: "moto" },
+        { helm: "mecha",   weapon: "scythe", w1: "#7ff0dd", w2: "#ffe27a", trim: "#3fd6c0", metal: "#8d99ae", mount: "rex" },
       ],
       desc: "打远程 ×2.4，移速 +15%；代价：生命 -20%、挨近战伤害 +35%",
       trait: { speedMul: 1.15, hpMul: 0.8, atkMulVs: { ranged: 2.4 }, takeMoreVs: { melee: 1.35 } },
@@ -1951,6 +1957,20 @@ function siegeShouldHitWall(u, target) {
  * ============================================================================= */
 
 /* ================= 更新 ================= */
+/* 走位修复（2026-09-04）：世界空间内沿目标方向做归一化匀速步进，x/y 同速，
+   纵深观感交给 applyWorld 的透视投影。替代原来的 Math.sign 轴对齐 8 方向步进 +
+   y 方向 0.6 硬减速——那套写法让单位在屏幕上「朝向偏掉 / 走位呈楼梯状 / 远近速度错位」，
+   正是用户反馈的「路径也有问题」。只改移动几何，不动战斗/数值；soft-repulsion 与击退不受影响。 */
+function stepToward(u, mx, my, dt) {
+  const dx = mx - u.x, dy = my - u.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 0.001) return;
+  const step = u.speed * dt;
+  if (d <= step) { u.x = mx; u.y = my; return; }
+  u.x += (dx / d) * step;
+  u.y += (dy / d) * step;
+}
+
 function update(dt) {
   if (G.phase !== "battle") return;   // 竞技场等非守城模式：非战斗相位不推进；守城模式相位恒为 battle（实时，不暂停）
   const ms = dt * 1000;
@@ -2051,8 +2071,7 @@ function update(dt) {
         }
       } else {
         u.state = "move";
-        u.x += Math.sign(tx - u.x) * u.speed * dt;
-        u.y += Math.sign(ty - u.y) * u.speed * 0.6 * dt;
+        stepToward(u, tx, ty, dt);
         u.walkPhase += dt * 10;
       }
       // Boss 每 6 秒放一次大招（用自身技能表，零新增演出代码）
@@ -2114,10 +2133,9 @@ function update(dt) {
           mx = u.homeX; my = u.homeY;
         }
       }
-      const ddx = Math.abs(mx - u.x), ddy = Math.abs(my - u.y);
-      if (ddx > 3 || ddy > 3) {
-        u.x += Math.sign(mx - u.x) * u.speed * dt;
-        u.y += Math.sign(my - u.y) * u.speed * 0.6 * dt;
+      const reach = Math.hypot(mx - u.x, my - u.y);
+      if (reach > 2) {
+        stepToward(u, mx, my, dt);
         u.walkPhase += dt * 10;
         u.dustT += dt;
         if (u.dustT > 0.3) { u.dustT = 0; addEffect("dust", u.x - u.facing * 10, u.y + u.radius * 0.9, {}); }
@@ -2649,12 +2667,24 @@ function applyWorld(wx, wy) {
 }
 function withWorld(wx, wy, fn) { ctx.save(); applyWorld(wx, wy); fn(); ctx.restore(); }
 
+/* ================= 纯代码绘制（无外部素材） =================
+ * 角色 / 武器 / 坐骑全部由 Canvas 矢量代码绘制（见 kairoBody / kairoWeapon / kairoMount）。
+ * 每个兵种通过 kit(u) 取武器 / 头盔 / 盾牌 / 坐骑 / 阵营配色，保证「一眼认得出兵种」。
+ * 不依赖任何 PNG，单文件即开、无 404、无外部授权负担。 */
+
+
+
+/* 状态 -> 程序化演出（见 drawUnit / kairoBody / kairoWeapon）：不使用任何精灵表。 */
+
+function loadSprites() {}
+
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#0b0710"; ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.setTransform(VIEW.scale, 0, 0, VIEW.scale, VIEW.ox, VIEW.oy);
+  ctx.imageSmoothingEnabled = false;   // 像素风：全局 nearest（canvas resize 会重置，每帧兜底）
   if (G.shake > 0) ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
   drawGround();
   if (G && G.mode === "siege") drawWall();
@@ -2663,7 +2693,10 @@ function draw() {
   for (const u of G.units) items.push({ y: u.y, dead: u.state === "dead", wx: u.x, wy: u.y,
     draw: () => {
       if (u.boss || u.elite) ctx.scale(u.boss ? 1.75 : 1.3, u.boss ? 1.75 : 1.3);
-      if (u.state === "dead") drawCorpse(u); else drawUnit(u);
+      if (u.state === "dead") {
+        drawCorpse(u);                                                 // 纯代码：倒地尸体+淡出
+      }
+      else drawUnit(u);
     } });
   for (const e of G.effects) items.push({ y: e.y, dead: false, wx: e.x, wy: e.y, draw: () => drawEffect(e) });
   for (const p of G.projectiles) items.push({ y: p.y, dead: false, wx: p.x, wy: p.y, draw: () => drawProjectile(p) });
@@ -2832,6 +2865,7 @@ function drawGround() {
   // 中线
   ctx.strokeStyle = "rgba(255,212,121,.35)"; ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
   ctx.beginPath(); ctx.moveTo(W / 2, projY(yTop)); ctx.lineTo(W / 2, projY(yBot)); ctx.stroke(); ctx.setLineDash([]);
+  // 战场贴图覆盖层已停用（v3 改为纯代码绘制棋盘格）；外置 PNG 不再需要
   // 前缘压暗（地面「厚度」）
   const g = ctx.createLinearGradient(0, horizon, 0, PROJ.floor);
   g.addColorStop(0, "rgba(40,30,18,0)");
@@ -2915,11 +2949,15 @@ function drawUnit(u) {
     ctx.fillRect(-R * 1.5, R * 0.7, R * 3, R * 0.6);
     ctx.restore();
   }
-  if (u.type === "cavalry") kairoMount(u, k);
+  /* 纯代码绘制：根据 kit(u) 为每个兵种戴不同的头盔/持不同的武器/骑不同的坐骑。
+     boss/elite 的放大已在 draw() 里 ctx.scale 过，这里不再二次放大。 */
+  const kc = kit(u);
+  const onMount = !!kc.mount;
+  if (onMount) kairoMount(u, k);
 
-  kairoBody(ctx, u, { bob, armSwing, legL, legR, weaponAng, xEye, mouth, hideLegs: u.type === "cavalry" });
+  kairoBody(ctx, u, { bob, armSwing, legL, legR, weaponAng, xEye, mouth, hideLegs: onMount });
 
-  if (u.type !== "ranged" && u.swing > 0 && u.state !== "knocked") {
+  if (u.swing > 0 && u.state !== "knocked") {
     const S = 0.38, kk = 1 - Math.max(0, u.swing) / S;
     if (kk > 0.3 && kk < 0.62) {
       const w = (kk - 0.3) / 0.32;
@@ -3355,6 +3393,54 @@ function kairoWeapon(ctx, u, k, c, W) {
       ctx.strokeStyle = OUTLINE; ctx.strokeRect(0.6 * k, -3 * k, 3 * k, 13 * k);
       ctx.fillStyle = m; ctx.fillRect(0.2 * k, 7 * k, 3.8 * k, 2.4 * k);
       break;
+    /* 弯刀（blade 分支）：弧形宽刃——一眼区分于直剑/长矛 */
+    case "blade": {
+      ctx.fillStyle = b; ctx.fillRect(0.8 * k, 6 * k, 2.4 * k, 4 * k);
+      ctx.fillStyle = m; ctx.fillRect(-1.6 * k, 5 * k, 7 * k, 2 * k);
+      ctx.strokeStyle = OUTLINE; ctx.strokeRect(-1.6 * k, 5 * k, 7 * k, 2 * k);
+      // 刀身：弧形三角（宽+弯）
+      ctx.fillStyle = a;
+      ctx.beginPath();
+      ctx.moveTo(2.2 * k, 5.2 * k);
+      ctx.lineTo(-3.2 * k, -10 * k);
+      ctx.lineTo(0.6 * k, -11 * k);
+      ctx.quadraticCurveTo(3 * k, -3 * k, 2.2 * k, 5.2 * k);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1;
+      ctx.stroke();
+      // 刀背高光
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.beginPath();
+      ctx.moveTo(0.5 * k, 4 * k); ctx.lineTo(-2.4 * k, -8 * k); ctx.lineTo(-0.8 * k, -9 * k); ctx.closePath(); ctx.fill();
+      break;
+    }
+    /* 镰刀（scythe 分支）：长杆+弯月刃+内侧刃——一眼区分于 lance */
+    case "scythe": {
+      // 长木杆（更深更长）
+      ctx.fillStyle = b; ctx.fillRect(0.8 * k, -16 * k, 2.4 * k, 26 * k);
+      ctx.strokeStyle = OUTLINE; ctx.lineWidth = 1; ctx.strokeRect(0.8 * k, -16 * k, 2.4 * k, 26 * k);
+      // 弯月刃：从杆顶向右画一道厚弧
+      ctx.fillStyle = a;
+      ctx.beginPath();
+      ctx.moveTo(2 * k, -18 * k);
+      ctx.lineTo(11 * k, -22 * k);
+      ctx.quadraticCurveTo(14 * k, -16 * k, 12 * k, -10 * k);
+      ctx.lineTo(2 * k, -16 * k);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = OUTLINE; ctx.stroke();
+      // 刃口高光
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.beginPath();
+      ctx.moveTo(3 * k, -18 * k); ctx.lineTo(10 * k, -21 * k); ctx.quadraticCurveTo(12.5 * k, -16 * k, 11 * k, -11 * k);
+      ctx.lineTo(3 * k, -16 * k);
+      ctx.closePath();
+      ctx.fill();
+      // 杆底加固箍（与矛头视觉反差）
+      ctx.fillStyle = t; ctx.fillRect(0.4 * k, -17 * k, 3.4 * k, 2.2 * k);
+      break;
+    }
   }
   if (c.scope) {                       /* 狙击手瞄准镜——造型上区分「远程」与「远程·狙击分支」 */
     ctx.fillStyle = m;
@@ -4121,6 +4207,7 @@ function frame(now) {
 
 resetGame();
 buildCmdBar();
+loadSprites();   // 预载 assets/ 下精灵；缺失自动回退程序化小人，游戏不崩
 if (typeof window !== "undefined") { window.addEventListener("resize", resize); resize(); }
 requestAnimationFrame(frame);
 
