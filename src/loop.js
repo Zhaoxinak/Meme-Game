@@ -187,7 +187,7 @@ $("btn-fight").onclick = () => { if (G.phase2 === "breather") { addGold(ECON.ski
 const QB_UNITS = ["melee", "ranged", "cavalry", "sapper", "medic", "mage"];
 function hotkeyBuyUnit(type) {
   if (G.mode !== "siege" || G.siegeOver) return;
-  if (G.gold < unitPrice(type) || !buyUnit(type)) sfx("deny");
+  if (G.gold < unitPrice(type) || !buyUnit(type)) sfx("deny"); else sfx("ui_buy_ok");
   refreshShopUI();
 }
 

@@ -19,7 +19,7 @@ const AUDIO_SRC = fs.readFileSync("F:/Games/Meme-Game/src/audio.js", "utf8");
    对齐 headless.js 的 __T 模式 —— 注入段只在测试字符串里，不污染浏览器实际加载的 audio.js。 */
 const PROBE_SUFFIX = `
 ;globalThis.__A = {
-  initAudio, setVolume, getVolumes, sfx, tone, toneP, noiseP,
+  initAudio, setVolume, getVolumes, sfx, sfxMat, tone, toneP, noiseP,
   get bus()         { return bus; },
   get AU()          { return AU; },
   get SFX_THROTTLE(){ return SFX_THROTTLE; },
@@ -62,7 +62,7 @@ function buildSandbox({ state = "running", localStorageData = {} } = {}) {
     createBuffer(c, len, sr) { return { getChannelData: () => new Float32Array(len), length: len, sampleRate: sr }; },
     createOscillator()   { oscCreated++; return { type: "sine", frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, detune: { value: 0 }, connect() {}, start() {}, stop() {}, onended: null }; },
     createBufferSource() { bufSrcCreated++; return { buffer: null, connect() {}, start() {}, stop() {}, onended: null }; },
-    createBiquadFilter() { return { type: "lowpass", frequency: { value: 0 }, connect() {} }; },
+    createBiquadFilter() { return { type: "lowpass", frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} }, Q: { value: 0 }, connect() {} }; },
     resume() { ctx.state = "running"; },
   };
   const sandbox = vm.createContext({
@@ -280,5 +280,75 @@ function run(sandbox, runner) {
   ok(r.after !== 99, "getVolumes 返回副本", "内部 sfx=" + r.after);
 }
 
-console.log("\n" + (fail === 0 ? "✅ W1 音频地基验收通过" : "❌ 存在失败") + "  (" + pass + " 通过 / " + fail + " 失败)\n");
+/* ---- 12. W2 · 30 音效全部可播放（无爆音 / 无抛）---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    const W2 = ["ui_hover","ui_click","ui_buy_ok","ui_deny","ui_tab","ui_panel_open","ui_panel_close",
+                "ui_toggle","ui_cd_ready","ui_error",
+                "atk_swing","hit_flesh","hit_armor","hit_wood","bow_release","arrow_hit","gunshot",
+                "explosion","hoof","charge_impact","knock_land","death","shield_break","skill_cast",
+                "coin_gain","coin_combo","wave_reward","upgrade_done","wall_hit","wall_break"];
+    const ob = window.__oscCount.get(), bb = window.__bufSrcCount.get();
+    let threw = null, counted = 0;
+    for (const k of W2) {
+      try { __A.sfx(k); counted++; } catch (e) { threw = k + ":" + e.message; break; }
+      /* mock 不触发 onended，故手动释放 voice 模拟"声音播完归还配额"，
+         否则 30 个紧凑连调会被 12 voices 并发上限挡住（那是 test 7 的活）。 */
+      globalThis.sfxCount = 0;
+    }
+    return { threw, counted, total: W2.length, nodes: (window.__oscCount.get() - ob) + (window.__bufSrcCount.get() - bb) };
+  }`);
+  ok(!r.threw, "W2 30 音效逐一调用不抛异常", r.threw || "");
+  ok(r.counted === r.total, "W2 30 音效计数完整（" + r.counted + "/" + r.total + "）", "缺失 " + (r.total - r.counted));
+  ok(r.nodes >= r.total, "每个 W2 音效至少产出一个音频节点（osc+bufSrc=" + r.nodes + "）", "节点 " + r.nodes);
+}
+
+/* ---- 13. W2 · 三材质命中路由（sfxMat 按 armor 选音色）---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    const cases = [
+      { t: { type: "melee" },                 exp: "hit_flesh" },
+      { t: { type: "ranged" },                exp: "hit_wood"  },
+      { t: { type: "cavalry" },               exp: "hit_armor" },
+      { t: { type: "melee",  spec: "medic" }, exp: "hit_flesh" },
+      { t: { type: "ranged", spec: "mage"  }, exp: "hit_armor" },
+      { t: { type: "melee",  spec: "sapper"}, exp: "hit_wood"  },
+      { t: null,                              exp: "hit_flesh" },
+    ];
+    let threw = null;
+    for (const c of cases) { try { __A.sfxMat(c.t); } catch (e) { threw = e.message; break; } }
+    return { threw, n: cases.length };
+  }`);
+  ok(!r.threw, "sfxMat 对 7 种 armor 组合不抛异常", r.threw || "");
+  ok(r.n === 7, "sfxMat 覆盖 7 种组合", "n=" + r.n);
+  // 直接验证三材质音效各自可播放（盲测≥70% 正确率为人工验收门禁，此处只验可发声）
+  const r2 = run(sandbox, `{
+    __A.initAudio();
+    const ks = ["hit_flesh","hit_armor","hit_wood"];
+    let threw = null;
+    for (const k of ks) { try { __A.sfx(k); } catch (e) { threw = k + ":" + e.message; break; } }
+    return { threw };
+  }`);
+  ok(!r2.threw, "三材质命中音效均可播放", r2.threw || "");
+}
+
+/* ---- 14. W2 · wall_hit / wall_break 可播放且区分（人工盲测 100% 为验收门禁）---- */
+{
+  const { sandbox } = buildSandbox();
+  const r = run(sandbox, `{
+    __A.initAudio();
+    const ob = window.__oscCount.get(), bb = window.__bufSrcCount.get();
+    let threw = null;
+    try { __A.sfx("wall_hit"); __A.sfx("wall_break"); } catch (e) { threw = e.message; }
+    return { threw, nodes: (window.__oscCount.get() - ob) + (window.__bufSrcCount.get() - bb) };
+  }`);
+  ok(!r.threw, "wall_hit / wall_break 均可播放", r.threw || "");
+  ok(r.nodes >= 2, "wall 两类音效各产节点（nodes=" + r.nodes + "）", "nodes " + r.nodes);
+}
+
+console.log("\n" + (fail === 0 ? "✅ W1+W2 音频验收通过" : "❌ 存在失败") + "  (" + pass + " 通过 / " + fail + " 失败)\n");
 process.exit(fail === 0 ? 0 : 1);

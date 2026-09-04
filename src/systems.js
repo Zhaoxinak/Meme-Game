@@ -52,9 +52,10 @@ function damageWall(seg, dmg, attacker) {
   const cy = (WALL.segY[seg][0] + WALL.segY[seg][1]) / 2;
   addEffect("spark", WAVE.wallX, cy, { color: "#c9b037" });
   if (Math.random() < 0.35) spawnParticles(WAVE.wallX, cy, { count: 3, color: "#d9c9a3", speed: 90, life: 0.4, grav: 300, size: 3 });
+  sfx("wall_hit");                       // W2：墙受击的沉闷反馈（P3 城墙第二血条的听觉支撑）
   if (G.wall.segs[seg] <= 0) {
     banner("城墙被攻破！");
-    shake(0.6); sfx("boom");
+    shake(0.6); sfx("wall_break");       // W2：崩塌用更长的下坠音，与 wall_hit 明显区分
     addEffect("boom", WAVE.wallX, cy, { r: 70, color: "#ffd479", glow: "#ff9f3a" });
     spawnParticles(WAVE.wallX, cy, { count: 26, color: "#e8dcc0", speed: 220, life: 1.0, grav: 420, size: 5 });
   }
@@ -285,6 +286,7 @@ function endWave(win, timeout) {
   G.phase2 = "breather";
   const reward = ECON.waveRewardBase + ECON.waveRewardPerWave * G.wave;
   addGold(reward);
+  sfx("wave_reward");                       // W2：波次奖励的仪式感
   const int = nextInterest();
   if (int > 0) addGold(int);
   let perfect = false;

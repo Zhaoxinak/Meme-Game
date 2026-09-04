@@ -46,7 +46,7 @@ function attack(u, target) {
     addEffect("spark", target.x, target.y - 8, { color: "#fff" });
     if (u.type === "cavalry") u.x += u.facing * 14;
   }
-  sfx(u.type === "ranged" ? "shoot" : "hit");
+  if (u.type === "ranged") sfx("shoot"); else sfxMat(target);   // 远程保留 shoot 释放音；近战命中按目标护甲走 flesh/armor/wood 三材质
   spawnParticles(target.x, target.y - 8, { count: 3, color: "#fff", speed: 90, life: 0.35, size: 3 });
   // 大招触发率加成只归我方（atkSpdMul 同理，见 update 里的攻击间隔结算）
   const scMul = u.side === "player" ? G.mods.skillChanceMul : 1;
