@@ -16,7 +16,7 @@ function ok(cond, msg) {
   const { T, flush } = loadGame(2026);
   T.startGame("siege");
   flush(0.1);
-  T.showShop();   // 商店默认收起，验证买兵需先打开（实战也可走底部常驻快捷条买兵）
+  T.refreshShopUI();   // 商店已改为底部常驻经营条，开局即显示，无需「打开」这一步
   T.G.gold = 99999;
   const grid = T.getShopGrid();
   ok(grid && grid.children.length > 0, "A1 商店卡片已构建(" + (grid ? grid.children.length : 0) + "张)");

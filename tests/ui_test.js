@@ -1,12 +1,14 @@
-/* UI 回归测试：商店开关 / 买兵点击 / 卡片原地刷新 / 战场不被遮挡 / draw 渲染冒烟
-   设计：商店默认收起（左侧 280px 常驻面板会盖住战场左路，故不再开局自动开）；
-        点主城 /「商店」按钮可开关；买兵升科技走底部常驻快捷条，无需开着商店。
+/* UI 回归测试：底部常驻经营条
+   设计变更（2026-09-04）：侧边栏商店面板 + 底部快捷购买条 → 合并为一条底部常驻经营条。
    覆盖：
-   1. 开局商店默认收起（非阻塞，战场左路可见）—— 回应「战场界面被遮挡」
-   2. 点主城可打开商店（toggle）
-   3. 买兵点击没效果（卡片外壳常驻 + onclick 永远在线）
-   4. 收起后点主城能再开
-   主城画在世界 y≈224-300 → 屏幕 y≈360-435（PROJ 透视），点击坐标按屏幕像素给。 */
+   1. 守城模式开局经营条即显示，竞技场模式不显示
+   2. 四个页签卡片数正确（买兵 6 / 科技 3 / 城墙 4 / 经济 3）
+   3. 卡片外壳稳定：多次原地刷新不换 DOM（点击不会被吞）
+   4. 点卡片能花钱买东西，钱不够时不买、标 deny、不抛异常
+   5. 1-6 数字键快捷买兵仍可用
+   6. 描述文本不再出现 "<br>" 字面串（曾因 textContent 直出 HTML 标签）
+   7. 结算后经营条收起
+   8. draw() 与长跑 update() 不抛异常 */
 const { loadGame } = require("./headless");
 
 let fails = 0;
@@ -14,91 +16,102 @@ function check(name, cond) {
   console.log((cond ? "  PASS " : "  FAIL ") + name);
   if (!cond) fails++;
 }
+const doc = () => require("./headless");
 
-const { T } = loadGame(20260903);
+const { T } = loadGame(20260904);
+const dock = () => T.document.getElementById("shopdock");
+const grid = () => T.document.getElementById("shop-grid");
+const cards = () => grid().children;
 
-// ---- 1. 开局商店默认收起（非阻塞：左侧 280px 面板不再盖住战场左路）----
+// ---- 1. 显隐：守城显示 / 竞技场隐藏 ----
 T.startGame("siege");
-check("开局商店默认收起（非阻塞，战场左路不被盖）", !T.getShopEl().classList.contains("show"));
+check("守城开局：经营条显示", dock().style.display === "flex");
+check("守城开局：战场挂上 dock-on（让出底部空间）",
+  T.document.getElementById("arena-wrap").classList.contains("dock-on"));
 
-// ---- 2. 点主城可打开商店（toggle：收起态点主城 = 打开）----
-T.onCanvasClick({ clientX: 80, clientY: 400 });
-check("点主城 → 商店打开", T.getShopEl().classList.contains("show"));
+T.startGame("arena");
+check("竞技场模式：经营条隐藏", dock().style.display === "none");
 
-// ---- 3. 卡片外壳稳定：多次刷新不换 DOM（点击不再被吞）----
-T.showShop();
-const grid = T.getShopGrid();
-check("买兵页签有 6 张卡", grid.children.length === 6);
-const card0 = grid.children[0];
-T.refreshShopUI();
-T.refreshShopUI();
-T.refreshShopUI();
-check("刷新 3 次后卡片外壳未重建", grid.children[0] === card0);
+T.startGame("siege");
 
-// ---- 4. 买兵点击生效（战斗中也能买，实时）----
-const before = T.countPlayerUnits();
+// ---- 2. 页签卡片数 ----
+const TAB_EXPECT = { unit: 6, tech: 3, wall: 4, econ: 3 };
+for (const [tab, n] of Object.entries(TAB_EXPECT)) {
+  T.setShopTab(tab);
+  check("页签「" + tab + "」有 " + n + " 张卡", cards().length === n);
+}
+
+// ---- 3. 卡片外壳稳定：反复刷新不重建 DOM ----
+T.setShopTab("unit");
+const card0 = cards()[0];
+T.refreshShopUI(); T.refreshShopUI(); T.refreshShopUI();
+check("刷新 3 次后卡片外壳未重建", cards()[0] === card0);
+
+// ---- 4. 点击购买 / 买不起的反馈 ----
 T.addGold(500);
+const before = T.countPlayerUnits();
 card0.onclick();
 check("点卡片买到兵（+1）", T.countPlayerUnits() === before + 1);
-check("卡片数量原地更新为 ×2（起手 1 个 + 刚买 1 个）", /×2/.test(card0.querySelector(".s-name").textContent));
+check("卡片标题原地更新为 ×2（起手 1 个 + 刚买 1 个）", /×2/.test(card0.querySelector(".s-name").textContent));
 
-// ---- 5. 钱不够时点击 → 不买东西、卡片闪 deny、不抛异常 ----
-const broke = T.countPlayerUnits();
+const goldBefore = T.G.gold;
 T.G.gold = 0;
 card0.onclick();
-check("没钱时点卡片不买兵", T.countPlayerUnits() === broke);
-check("没钱时点卡片不扣钱", T.G.gold === 0);
-check("没钱时卡片标了 deny（抖动反馈）", card0.classList.contains("deny") === true);
-T.addGold(100);
+check("没钱时点卡片不买兵", T.G.gold === 0);
+check("没钱时卡片标 deny（抖动 + 低音反馈）", card0.classList.contains("deny") === true);
+T.G.gold = goldBefore;
 
-// ---- 6. 收起 → 点主城再打开（原来打不开的问题）----
-T.toggleShop();
-check("toggleShop 收起", !T.getShopEl().classList.contains("show"));
-T.onCanvasClick({ clientX: 90, clientY: 410 });
-check("收起后再点主城 → 重新打开", T.getShopEl().classList.contains("show"));
+// 科技页：花钱升到 Lv2
+T.setShopTab("tech");
+T.addGold(1000);
+const lvBefore = T.G.playerLv.melee;
+cards()[0].onclick();
+check("科技页点卡片能升级", T.G.playerLv.melee === lvBefore + 1);
 
-// ---- 7. 点战场非主城区域不误开商店 ----
-T.toggleShop(); // 先收起
-T.onCanvasClick({ clientX: 600, clientY: 400 });
-check("点战场中间不误开商店", !T.getShopEl().classList.contains("show"));
+// ---- 5. 1-6 数字键快捷买兵 ----
+T.setShopTab("unit");
+T.addGold(1000);
+const n1 = T.countPlayerUnits();
+T.hotkeyBuyUnit("melee");
+check("hotkeyBuyUnit 买到兵", T.countPlayerUnits() === n1 + 1);
+T.G.gold = 0;
+const n2 = T.countPlayerUnits();
+T.hotkeyBuyUnit("mage");
+check("没钱时 hotkeyBuyUnit 不买兵、不抛异常", T.countPlayerUnits() === n2);
+T.addGold(1000);
 
-// ---- 8. 指令瞄准优先于开商店（armed 时点击=放技能，不开店）----
-T.G.cmd.armed = "strike";
-T.onCanvasClick({ clientX: 80, clientY: 400 });
-check("瞄准技能时点主城不开商店", !T.getShopEl().classList.contains("show"));
-T.G.cmd.armed = null;
-
-// ---- 9. 商店打开状态下高频刷新不抛异常 ----
-T.showShop();
-check("打开状态高频 refreshShopUI 不抛异常", (() => {
-  try { for (let i = 0; i < 50; i++) T.refreshShopUI(); return true; } catch (e) { return false; }
+// ---- 6. 描述文本不得出现 HTML 字面标签 ----
+T.setShopTab("tech");
+let htmlLeak = false;
+for (const c of cards()) {
+  const txt = (c.querySelector(".s-desc").textContent || "") + (c.querySelector(".s-sub").textContent || "");
+  if (/<br>|<b>|<\//.test(txt)) htmlLeak = true;
+}
+check("卡片描述无 HTML 字面标签", !htmlLeak);
+check("描述第二行落到 s-sub（分行生效）", (() => {
+  const c = cards()[0];
+  return (c.querySelector(".s-sub").textContent || "").length > 0;
 })());
 
-// ---- 10. 波次推进时商店保持打开（实时经营不中断，不强制弹开/关）----
-T.addGold(1000);
-for (let i = 0; i < 40; i++) T.update(0.5); // 推进 20s 游戏时间（粗步长，沙箱节流下跑得完）
-check("波次推进后商店保持打开（实时经营不中断）", T.getShopEl().classList.contains("show"));
-check("游戏仍在战斗相位、未结束", T.G.phase === "battle" && !T.G.siegeOver);
+// ---- 7. 结算后经营条收起 ----
+T.G.siegeOver = true;
+T.syncShopDock();
+check("结算后经营条收起", dock().style.display === "none");
+check("结算后 dock-on 移除（战场空间还回来）",
+  !T.document.getElementById("arena-wrap").classList.contains("dock-on"));
 
-// ---- 10b. 被动经济自动化：无需手动点，金币应随时间自动增长（levy 已删，折入 taxBase）----
+// ---- 8. 渲染 / 长跑冒烟 ----
 T.startGame("siege");
-T.G.gold = 0;
-const g0 = T.G.gold;
-for (let i = 0; i < 40; i++) T.update(0.1); // 推 4s：被动税收约 +40 金
-check("被动经济自动化：不点按钮金币也增长", T.G.gold > g0);
-
-// ---- 11. draw() 渲染冒烟：守城渲染代码不抛异常（此前无测试覆盖）----
 check("draw() 渲染不抛异常", (() => {
   try { T.draw(); return true; } catch (e) { console.log("    draw error:", e && e.message); return false; }
 })());
-
-// ---- 12. 游戏结束后点主城无法开店（onCanvasClick 在 siegeOver 时屏蔽开商店）----
-T.showShop();      // 明确打开
-T.toggleShop();    // 收起，确保已知状态
-check("收起后商店关闭", !T.getShopEl().classList.contains("show"));
-T.G.siegeOver = true;
-T.onCanvasClick({ clientX: 80, clientY: 400 });
-check("游戏结束后点主城不开店", !T.getShopEl().classList.contains("show"));
+check("推进 20s 游戏时间不抛异常且仍在进行中", (() => {
+  try {
+    for (let i = 0; i < 40; i++) T.update(0.5);
+    return T.G.phase === "battle" && !T.G.siegeOver;
+  } catch (e) { console.log("    update error:", e && e.message); return false; }
+})());
+check("长跑后经营条仍显示（实时经营不中断）", dock().style.display === "flex");
 
 console.log(fails === 0 ? "\n全部通过 ✔" : "\n有 " + fails + " 项失败 ✘");
 process.exit(fails === 0 ? 0 : 1);

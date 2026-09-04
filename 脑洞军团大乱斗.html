@@ -58,6 +58,9 @@
   /* ---- 战场 ---- */
   #arena-wrap {
     position:relative; flex:1; min-height:0; width:100%;
+    /* --dock-h：底部常驻经营条实测高度（JS 写入）。战场用 padding-bottom 让出这段空间，
+       保证经营条永不遮挡单位；0 时（竞技场模式）布局与原来完全一致。 */
+    --dock-h:0px;
     background:#0c1422; border:none; overflow:hidden;
     box-shadow:0 10px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
   }
@@ -259,42 +262,10 @@
   .kill-feed .kf-e { color:#ff9f9f; }
 
   .hint {
-    position:absolute; left:12px; bottom:78px; z-index:5;
+    position:absolute; left:12px; bottom:calc(78px + var(--dock-h, 0px)); z-index:5;
     font-size:11px; color:#cbb8ee; background:rgba(20,14,30,.6);
     border:1px solid rgba(255,212,121,.2); border-radius:10px; padding:4px 10px; pointer-events:none;
   }
-
-  /* ---- 守城常驻快捷购买条（居中置于战场下方空白带，不挡单位；钱够随时买兵/升科技）---- */
-  #quickbar {
-    position:absolute; left:170px; right:12px; bottom:10px; z-index:7;
-    display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center;
-    background:rgba(24,16,36,.86); border:1px solid rgba(255,212,121,.28);
-    border-radius:14px; padding:7px 12px; backdrop-filter:blur(4px);
-    pointer-events:auto; overflow:hidden;
-  }
-  #quickbar .qb-group { display:flex; gap:5px; }
-  #quickbar .qb-sep { width:1px; align-self:stretch; background:rgba(255,212,121,.28); margin:0 2px; }
-  #quickbar .qb-gold { margin-left:auto; font-size:13px; color:#e7ddcb; white-space:nowrap; }
-  #quickbar .qb-gold b { color:#ffd479; font-variant-numeric:tabular-nums; }
-  .qb-btn {
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-width:42px; padding:4px 7px; border-radius:9px; cursor:pointer;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-    color:#efe6d2; font-size:12px; font-weight:800; line-height:1.15;
-    user-select:none; transition:transform .06s, background .1s;
-  }
-  .qb-btn .qb-c { font-size:11px; color:#ffd479; font-variant-numeric:tabular-nums; }
-  .qb-btn:hover { background:rgba(255,212,121,.18); }
-  .qb-btn:active { transform:scale(.93); }
-  .qb-btn.poor { opacity:.4; cursor:not-allowed; background:rgba(255,255,255,.03); }
-  .qb-btn.poor .qb-c { color:#ff8a6a; }
-  .qb-btn.maxed { opacity:.38; cursor:default; }
-  /* 钱够即发光：呼吸金光引导玩家花掉每一枚金币，强化「随时能买」的爽感 */
-  @keyframes qbpulse { 0%,100%{ box-shadow:0 0 0 1px rgba(255,212,121,.45), 0 0 8px rgba(255,212,121,.20); }
-                       50%   { box-shadow:0 0 0 1px rgba(255,212,121,.72), 0 0 15px rgba(255,212,121,.42); } }
-  .qb-btn.afford { border-color:rgba(255,212,121,.5); animation:qbpulse 1.4s ease-in-out infinite; }
-  .qb-btn.deny { animation:qbdeny .4s; }
-  @keyframes qbdeny { 0%,100%{transform:none;} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
 
   /* ---- 解说弹幕 ---- */
   .commentary {
@@ -328,7 +299,7 @@
   }
 
   /* ---- 战术指挥栏（玩家主动参与） ---- */
-  #cmd-bar { position:absolute; left:12px; bottom:10px; z-index:8; display:flex; gap:8px; }
+  #cmd-bar { position:absolute; left:12px; bottom:calc(10px + var(--dock-h, 0px)); z-index:8; display:flex; gap:8px; }
   .cmd-btn {
     position:relative; overflow:hidden; width:54px; height:54px; border-radius:12px; cursor:pointer;
     border:1px solid rgba(255,212,121,.4); background:linear-gradient(180deg,#3a2e52,#241b3c);
@@ -404,47 +375,53 @@
     border:1px solid rgba(255,212,121,.45); color:#ffd479;
   }
   .gold-pill .coin { width:11px; height:11px; border-radius:50%; background:#ffd479; box-shadow:0 0 7px #ffd479; }
-  /* 商店面板 */
-  /* 守城实时模式：商店改为左侧常驻面板（非阻塞），战场与敌人从右侧照常可见，且面板区域 pointer-events:none 不影响点战场放技能 */
-  #shop { background:transparent; backdrop-filter:none; align-items:stretch; justify-content:flex-start; pointer-events:none; padding:0; }
-  #shop .panel {
-    pointer-events:auto; margin:0; width:280px; max-width:280px; height:100%; max-height:none;
-    border-radius:0 16px 16px 0; text-align:left; overflow-y:auto;
-    background:linear-gradient(180deg, rgba(40,31,22,.93), rgba(24,18,12,.93));
+  /* ===== 底部常驻经营条（守城模式）：买兵 / 科技 / 修墙 / 经济 全在这条里，不存在「打开商店」这一步 =====
+     设计意图：经营是守城模式的核心决策，任何「先开面板才能花钱」的步骤都是给核心循环加摩擦。
+     条子常驻在最底部，战场用 padding-bottom 让出这段高度，所以既不遮挡单位、也不用牺牲视野换操作。 */
+  #shopdock {
+    position:absolute; left:0; right:0; bottom:0; z-index:7; display:none;
+    flex-direction:column; gap:6px; padding:7px 12px 9px;
+    background:linear-gradient(180deg, rgba(30,22,15,.93), rgba(18,13,9,.97));
+    border-top:1px solid rgba(244,184,96,.42);
+    box-shadow:0 -10px 30px rgba(0,0,0,.5); backdrop-filter:blur(6px);
+    pointer-events:auto; max-height:44vh; overflow-y:auto;
   }
-  #shop .shop-grid { justify-content:flex-start; }
-  #shop .shop-tabs { justify-content:flex-start; }
-  #shop .shop-foot { flex-wrap:wrap; }
-  .shop-tabs { display:flex; gap:8px; justify-content:center; margin:10px 0 4px; flex-wrap:wrap; }
+  #shopdock .sd-top { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  #shopdock .sd-res { font-size:12px; color:#e3d4bc; white-space:nowrap; }
+  #shopdock .sd-res b { color:#ffd479; font-size:13px; font-variant-numeric:tabular-nums; }
+  #shopdock .sd-act { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  #shopdock .sd-act .ctl-btn { padding:5px 12px; font-size:12px; }
+  #shopdock .sd-timer { font-size:12px; color:#e3d4bc; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .shop-tabs { display:flex; gap:6px; flex-wrap:wrap; }
   .shop-tab {
-    font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; padding:7px 18px;
-    color:#e7ddcb; border:1px solid rgba(244,184,96,.4); border-radius:10px;
-    background:linear-gradient(180deg,#5a4632,#34281c); box-shadow:0 3px 0 rgba(0,0,0,.4);
+    font-family:inherit; font-size:12px; font-weight:800; cursor:pointer; padding:5px 14px;
+    color:#e7ddcb; border:1px solid rgba(244,184,96,.4); border-radius:9px;
+    background:linear-gradient(180deg,#5a4632,#34281c); box-shadow:0 2px 0 rgba(0,0,0,.4);
   }
+  .shop-tab:hover { filter:brightness(1.14); }
   .shop-tab.on { background:linear-gradient(180deg,#f4b860,#e0873a); color:#2e1404; }
-  .shop-grid { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .shop-grid { display:flex; gap:8px; flex-wrap:wrap; }
   .shop-card {
-    width:172px; text-align:left; cursor:pointer; position:relative; overflow:hidden;
+    flex:1 1 146px; min-width:146px; max-width:240px; text-align:left; cursor:pointer; position:relative; overflow:hidden;
     background:linear-gradient(180deg, rgba(255,248,231,.96), rgba(245,231,200,.96));
-    border:1px solid rgba(150,108,52,.5); border-radius:12px; padding:10px 12px; color:#2e2414;
-    box-shadow:0 5px 14px rgba(0,0,0,.4); transition:transform .08s, box-shadow .08s, border-color .08s;
+    border:1px solid rgba(150,108,52,.5); border-radius:10px; padding:6px 9px 7px; color:#2e2414;
+    box-shadow:0 4px 12px rgba(0,0,0,.4); transition:transform .08s, box-shadow .08s, border-color .08s;
   }
-  .shop-card:hover { transform:translateY(-3px); border-color:#f4b860; box-shadow:0 10px 22px rgba(244,184,96,.4); }
+  .shop-card:hover { transform:translateY(-2px); border-color:#f4b860; box-shadow:0 8px 18px rgba(244,184,96,.4); }
   .shop-card:active { transform:translateY(1px); }
   .shop-card.poor { opacity:.5; cursor:not-allowed; filter:grayscale(.45); }
-  .shop-card.poor:hover { transform:none; border-color:rgba(150,108,52,.5); box-shadow:0 5px 14px rgba(0,0,0,.4); }
+  .shop-card.poor:hover { transform:none; border-color:rgba(150,108,52,.5); box-shadow:0 4px 12px rgba(0,0,0,.4); }
   .shop-card.maxed { opacity:.55; cursor:default; }
   /* 点了但买不起：抖一抖，明确告诉玩家「不是没反应，是钱不够」 */
   @keyframes denyshake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
   .shop-card.deny { animation:denyshake .22s ease 2; border-color:#ff6a6a; }
-  .shop-card .s-name { font-size:14px; font-weight:900; margin-bottom:3px; }
-  .shop-card .s-desc { font-size:11.5px; line-height:1.6; color:#5a4c34; min-height:38px; }
-  .shop-card .s-cost { margin-top:7px; font-size:13px; font-weight:900; color:#b8541f; }
-  .shop-card .s-lv { position:absolute; right:8px; top:8px; font-size:11px; font-weight:900; color:#7a6a4f; }
-  /* 商店底部：开战按钮 + 备战倒计时 */
-  .shop-foot { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:16px; }
-  .shop-foot .timer { font-size:13px; color:#d7cdec; }
-  .shop-foot .timer b { color:#ffd479; font-variant-numeric:tabular-nums; }
+  /* 首行：名字 + 等级（左）…… 价格（右），把三行压成两行省高度 */
+  .shop-card .s-head { display:flex; align-items:baseline; gap:5px; }
+  .shop-card .s-name { font-size:13px; font-weight:900; white-space:nowrap; }
+  .shop-card .s-lv { font-size:10px; font-weight:900; color:#8a7a5f; white-space:nowrap; }
+  .shop-card .s-cost { margin-left:auto; font-size:12.5px; font-weight:900; color:#b8541f; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .shop-card .s-desc { font-size:10.5px; line-height:1.45; color:#5a4c34; margin-top:2px; }
+  .shop-card .s-sub  { font-size:10.5px; line-height:1.45; color:#7a6a4f; }
   /* 城墙三段血条（画在战场左下） */
   .wall-hud {
     position:absolute; left:12px; top:74px; z-index:6; display:flex; flex-direction:column; gap:3px;
@@ -497,8 +474,13 @@
     .cmd-btn .ic { font-size:24px; }
     .cmd-btn .nm { font-size:12px; }
     #cmd-hint { font-size:14px; }
-    #quickbar { font-size:15px; padding:10px 16px; gap:8px; }
-    .qb-btn { min-width:54px; padding:6px 11px; font-size:14px; }
+    #shopdock { padding:9px 18px 11px; gap:8px; }
+    #shopdock .sd-res, #shopdock .sd-timer { font-size:14px; }
+    .shop-tab { font-size:14px; padding:6px 18px; }
+    .shop-card { flex-basis:168px; min-width:168px; padding:8px 12px 9px; }
+    .shop-card .s-name { font-size:15px; }
+    .shop-card .s-cost { font-size:14px; }
+    .shop-card .s-desc, .shop-card .s-sub { font-size:12px; line-height:1.5; }
     .kill-feed { font-size:14px; padding:6px 12px; }
     .hint { font-size:13px; }
     .wall-hud { font-size:12px; padding:6px 10px; }
@@ -543,7 +525,6 @@
     <div class="kill-feed" id="kill-feed" data-page-node-id="4dwsOOUHyK2RKWlvxowNRO"></div>
     <div class="ctl-bar" data-page-node-id="wPnHB748S3VduQBx6kctQ8">
       <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）" data-page-node-id="067JsH5pMJhFDxe5Ecaurv"><span class="lbl" data-page-node-id="QCnuPtDCnERyBy6rxaVNlQ">应援!</span></button>
-      <button class="ctl-btn" id="btn-shop" title="开关商店（实时经营，战斗中也能买）" style="display:none;">商店</button>
       <button class="ctl-btn" id="btn-speed" title="切换战斗速度" data-page-node-id="1SyQreDuuwB6mZRXFDoHsX">速度 1×</button>
       <button class="ctl-btn" id="btn-full" title="全屏观看" data-page-node-id="I69v2khvumqx371owAkJdb">全屏</button>
     </div>
@@ -558,12 +539,26 @@
     <div class="hint" data-page-node-id="5H4ItSxdSbyuLm4QBZAXkk">空格/双击=加速 · 点指令栏技能→点战场释放（落雷/治疗波）· 应援=增益 · 速度/全屏</div>
     <div class="commentary" id="commentary" data-page-node-id="oFLgtTPecfRl7FkSZiziWh"></div>
 
-    <!-- 常驻快捷购买条：守城模式专用，居中放在战场下方空白带，不挡单位；钱够随时可买兵/升科技（战斗与喘息期都行） -->
-    <div id="quickbar" style="display:none;">
-      <div class="qb-group" id="qb-units"></div>
-      <div class="qb-sep"></div>
-      <div class="qb-group" id="qb-tech"></div>
-      <div class="qb-gold">金 <b id="qb-gold">0</b></div>
+    <!-- 底部常驻经营条：守城模式专用。买兵 / 科技 / 修墙 / 经济四条经营线全在这里，
+         没有「打开商店」这一步——战斗中、喘息期，只要钱够随时可点。 -->
+    <div id="shopdock">
+      <div class="sd-top">
+        <div class="sd-res">
+          金库 <b id="sd-gold">0</b> ｜ 税收 <b id="sd-tax">0</b>/s ｜ 下波利息 <b id="sd-int">0</b>
+        </div>
+        <div class="shop-tabs" id="sd-tabs">
+          <button class="shop-tab on" data-tab="unit">买兵</button>
+          <button class="shop-tab" data-tab="tech">科技</button>
+          <button class="shop-tab" data-tab="wall">城墙</button>
+          <button class="shop-tab" data-tab="econ">经济</button>
+        </div>
+        <div class="sd-act">
+          <button class="ctl-btn" id="btn-stance">当前：驻守</button>
+          <span class="sd-timer" id="sd-timer">下一波 5s</span>
+          <button class="btn" id="btn-fight" style="margin-top:0;padding:6px 18px;font-size:13px;">提前出兵 +15</button>
+        </div>
+      </div>
+      <div class="shop-grid" id="shop-grid"></div>
     </div>
 
     <div class="overlay show" id="menu" data-page-node-id="xA4FYZ2sDOKPj84HtprcqF">
@@ -599,30 +594,6 @@
           <button class="diff-btn" data-diff="0.8">休闲　<span>敌军血量预算 ×0.8，练手熟悉经济节奏</span></button>
           <button class="diff-btn on" data-diff="1">标准　<span>设计基准，正常发挥可守到 12-18 波</span></button>
           <button class="diff-btn" data-diff="1.35">硬核　<span>预算 ×1.35，逼你精算每一枚金币</span></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="overlay" id="shop">
-      <div class="panel">
-        <h2 id="shop-title">备战 · 第 1 波</h2>
-        <div class="desc" style="text-align:center;font-size:12.5px;">
-          金库 <b id="shop-gold" style="color:#ffd479;font-size:16px;">0</b> 金币
-          ｜ 每秒税收 <b id="shop-tax">0</b>
-          ｜ 下波利息 <b id="shop-int">0</b>
-        </div>
-        <div class="shop-tabs">
-          <button class="shop-tab on" data-tab="unit">买兵</button>
-          <button class="shop-tab" data-tab="tech">科技</button>
-          <button class="shop-tab" data-tab="wall">城墙</button>
-          <button class="shop-tab" data-tab="econ">经济</button>
-        </div>
-        <div class="shop-grid" id="shop-grid"></div>
-        <div class="shop-foot">
-          <button class="ctl-btn on" id="btn-stance">当前：驻守</button>
-          <span class="timer" id="shop-timer-wrap">下一波 5s</span>
-          <button class="btn" id="btn-fight" style="margin-top:0;padding:10px 30px;font-size:15px;">提前出兵 +15</button>
-          <button class="ctl-btn" id="btn-shop-close">收起</button>
         </div>
       </div>
     </div>
@@ -728,7 +699,8 @@ const WAVE = {
   totalWaves: 20,                       // 通关波数，之后进无尽
   spawnInterval: 0.45,                  // 排队进场间隔（秒）
   // 城墙位置与我方阵型（世界坐标）。
-  // wallX 330：右侧 280px 商店面板打开时墙与血条也完全可见（面板只盖住墙后的主城/后排区）
+  // wallX 330：城墙与墙前战场落在画面中段偏左，主城与后排区在墙后——
+  // 底部经营条走 arena-wrap 的 padding 让位，不占战场像素，所以阵型无需为 UI 让路。
   wallX: 330, homeX: 235, sallyMaxX: 560, coreX: 88,
 };
 
@@ -1656,7 +1628,7 @@ function upgradeWall() {
   return true;
 }
 
-/* ---------------- 商店 ---------------- */
+/* ---------------- 商店（底部经营条商品表） ---------------- */
 function unitPrice(type) {
   const d = SHOP.units[type];
   let p = d.cost * Math.pow(d.scale, G.bought[type] || 0);
@@ -1844,7 +1816,7 @@ function endWave(win, timeout) {
   G.wave++;
   if (G.wave > WAVE.totalWaves && !G.endless) { siegeWin(); return; }
   // 实时：不再回备战暂停，直接进入短喘息（世界不暂停），倒计时结束自动出兵。
-  // 商店不强制弹开——尊重玩家的收起选择，想经营时点主城 / 商店按钮 / B 键都行（主城有气泡提示）。
+  // 经营条常驻底部，玩家在喘息期想花钱就花，不需要任何打开/收起动作。
   G.interT = WAVE.interWave;
   G.spawnQueue = [];
 }
@@ -1852,6 +1824,7 @@ function siegeWin() {
   G.siegeOver = true;
   G.phase2 = "over";
   G.phase = "result";
+  syncShopDock();          // 结算时收起经营条，把战场空间还回来
   showSiegeEnd(true);
 }
 function siegeLose() {
@@ -1860,6 +1833,7 @@ function siegeLose() {
   G.phase2 = "over";
   G.phase = "result";
   banner("主城陷落！");
+  syncShopDock();          // 结算时收起经营条
   shake(1.0); sfx("lose");
   setTimeout(() => showSiegeEnd(false), 700);
 }
@@ -2677,33 +2651,6 @@ function drawWall() {
   ctx.fillRect(cx0, cy0 - 18 * cs, cw, 5 * cs);
   ctx.fillStyle = cR > 0.5 ? "#ffd479" : (cR > 0.22 ? "#ff9f3a" : "#ff5a4a");
   ctx.fillRect(cx0, cy0 - 18 * cs, cw * cR, 5 * cs);
-  // 商店收起时：主城顶上浮一个「💰 商店」气泡，提示可以点主城开店
-  if (G.mode === "siege" && !G.siegeOver && !$("shop").classList.contains("show")) {
-    const bob = Math.sin(sceneT * 2.4) * 3;
-    const bx = cx0 + cw / 2, by = cy0 - 26 * cs + bob;
-    const bw = 66, bh = 22;
-    ctx.fillStyle = "rgba(20,14,8,.82)";
-    ctx.fillRect(bx - bw / 2, by - bh, bw, bh);
-    ctx.strokeStyle = "rgba(255,212,121,.8)";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(bx - bw / 2, by - bh, bw, bh);
-    // 气泡小尾巴
-    ctx.fillStyle = "rgba(20,14,8,.82)";
-    ctx.beginPath();
-    ctx.moveTo(bx - 4, by);
-    ctx.lineTo(bx + 4, by);
-    ctx.lineTo(bx, by + 5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#ffd479";
-    ctx.font = "bold 12px 'PingFang SC','Microsoft YaHei',sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("💰 商店", bx, by - bh / 2);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-  }
-  ctx.restore();
 }
 
 let sceneT = 0;
@@ -3541,10 +3488,9 @@ function updateHud() {
 /* 应援按钮 + 连杀 DOM 更新（每帧，轻量） */
 let shopRefreshTick = 0;
 function updateDom() {
-  refreshQuickbar();   // 守城常驻快捷购买条：钱够随时可买兵/升科技（战斗中也能点）
-  // 守城实时模式：商店常开时可随时买卖——每 6 帧整刷一次卡片，每帧刷新计时/数字
-  if (G.mode === "siege" && $("shop").classList.contains("show")) {
-    if (++shopRefreshTick % 6 === 0) refreshShopUI();
+  // 守城：底部经营条常驻，随时可花钱——每 6 帧整刷一次卡片，每帧刷计时/数字
+  if (G.mode === "siege" && !G.siegeOver) {
+    if (++shopRefreshTick % 6 === 0) { refreshShopUI(); syncShopDock(); }
     refreshShopTimer();
   }
   const btn = $("btn-cheer");
@@ -3615,30 +3561,37 @@ function sfx(kind) {
 }
 
 /* =========================================================================
-   守城远征：商店面板 / HUD / 结算
+   守城远征：底部常驻经营条 / HUD / 结算
+   设计决策（2026-09-04）：删掉侧边栏商店面板与底部快捷购买条，两条通路合并成
+   一条底部常驻经营条。理由：
+   1. 经营是守城的核心循环，「先开面板才能花钱」=给核心循环加一步摩擦；
+   2. 原左侧面板会盖住战场左路，玩家被迫在「看清战场」和「能花钱」之间二选一；
+   3. 快捷条只覆盖买兵/科技，修墙与经济仍被关在面板里，功能入口不一致。
+   现在四个页签都在底部，战场用 padding-bottom 让出高度，视野与操作不再互斥。
    ========================================================================= */
 let shopTab = "unit";
 let lastMode = "arena";
 let pickDiff = 1;   // 难度系数：休闲 0.8 / 标准 1.0 / 硬核 1.35（存全局，resetGame 不清）
 
-function showShop() {
-  refreshShopTimer();
-  refreshShopUI();
-  $("shop").classList.add("show");
-  const sb = $("btn-shop"); if (sb) sb.classList.add("on");
-}
-function closeShop() {
-  $("shop").classList.remove("show");
-  const sb = $("btn-shop"); if (sb) sb.classList.remove("on");
-}
-/* 开/关商店：右上「商店」按钮、B 键、点主城 三个入口共用 */
-function toggleShop() {
-  if (G.mode !== "siege" || G.siegeOver) return;
-  if ($("shop").classList.contains("show")) closeShop();
-  else showShop();
+/* 经营条的显隐 + 高度同步：只在守城模式、未结算时显示。
+   高度写进 #arena-wrap 的 --dock-h，战场据此让出空间（见 CSS），
+   高度变化时才 resize canvas —— 每帧读 offsetHeight 会强制回流，必须节流。 */
+function syncShopDock() {
+  const dock = $("shopdock");
+  const wrap = $("arena-wrap");
+  if (!dock || !wrap) return;
+  const show = (G.mode === "siege" && !G.siegeOver);
+  const disp = show ? "flex" : "none";
+  if (dock.style.display !== disp) dock.style.display = disp;
+  wrap.classList.toggle("dock-on", show);
+  const h = show ? Math.round(dock.getBoundingClientRect().height) : 0;
+  if (wrap.style.getPropertyValue("--dock-h") !== h + "px") {
+    wrap.style.setProperty("--dock-h", h + "px");
+    if (typeof resize === "function") resize();
+  }
 }
 function refreshShopTimer() {
-  const wrap = $("shop-timer-wrap");
+  const wrap = $("sd-timer");
   if (!wrap) return;
   wrap.textContent = (G.phase2 === "breather")
     ? ("下一波 " + Math.max(0, Math.ceil(G.interT)) + "s")
@@ -3654,10 +3607,12 @@ function makeShopCard(o) {
   const c = document.createElement("div");
   c.className = "shop-card";
   c._o = o;
-  c.innerHTML = '<div class="s-lv"></div><div class="s-name"></div><div class="s-desc"></div><div class="s-cost"></div>';
+  c.innerHTML = '<div class="s-head"><span class="s-name"></span><span class="s-lv"></span><span class="s-cost"></span></div>' +
+                '<div class="s-desc"></div><div class="s-sub"></div>';
   c._lv = c.querySelector(".s-lv");
   c._name = c.querySelector(".s-name");
   c._desc = c.querySelector(".s-desc");
+  c._sub = c.querySelector(".s-sub");
   c._cost = c.querySelector(".s-cost");
   c.onclick = () => {
     if (G.mode !== "siege") return;
@@ -3684,7 +3639,10 @@ function renderShopCard(c) {
   c.classList.toggle("maxed", maxed);
   if (c._lv)   c._lv.textContent   = o.lvText() || "";
   if (c._name) c._name.textContent = o.name();
-  if (c._desc) c._desc.textContent = o.desc();
+  // desc 用 \n 分行（原来是 <br>，但走 textContent 会把标签当字面文本显示出来——顺手修掉）
+  const lines = String(o.desc() || "").split("\n");
+  if (c._desc) c._desc.textContent = lines[0] || "";
+  if (c._sub)  c._sub.textContent  = lines.slice(1).join(" · ");
   if (c._cost) c._cost.textContent = maxed ? (o.maxText || "已满级") : cost + " 金";
 }
 /* 当前页签的卡片描述符：全部用 getter，保证原地刷新时读到的是实时数值 */
@@ -3706,8 +3664,8 @@ function shopItems() {
     return ["melee", "ranged", "cavalry"].map(line => ({
       lvText: () => "Lv" + G.playerLv[line],
       name: () => TYPE_NAMES[line] + "线",
-      desc: () => techCost(line) == null ? "已经满级（Lv5）" : ("升级后全系该兵种：生命 +" + Math.round((CONFIG.lvHpMul - 1) * 100) +
-        "% · 攻击 +" + Math.round((CONFIG.lvAtkMul - 1) * 100) + "%<br>已上场单位立刻同步升级"),
+      desc: () => techCost(line) == null ? "已经满级（Lv5）" : ("全系该兵种生命 +" + Math.round((CONFIG.lvHpMul - 1) * 100) +
+        "% · 攻击 +" + Math.round((CONFIG.lvAtkMul - 1) * 100) + "%\n已上场单位立刻同步升级"),
       cost: () => techCost(line) || 0,
       maxed: () => techCost(line) == null,
       onBuy: () => buyTech(line),
@@ -3717,7 +3675,7 @@ function shopItems() {
     const items = ["上段", "中段", "下段"].map((nm, i) => ({
       lvText: () => Math.ceil(G.wall.segs[i]) + "/" + wallSegMax(),
       name: () => "修复" + nm,
-      desc: () => repairCostOf(i) <= 0 ? "完好无损" : ("修复单价 " + WALL.repairCost + " 金/HP。<br>墙破了敌人会直扑主城，主城每掉 10% 血漏 5% 存款。"),
+      desc: () => repairCostOf(i) <= 0 ? "完好无损" : ("修墙单价 " + WALL.repairCost + " 金/HP\n墙破则敌人直扑主城，主城每掉 10% 血漏 5% 存款"),
       cost: () => repairCostOf(i),
       maxed: () => repairCostOf(i) <= 0,
       maxText: "完好",
@@ -3727,7 +3685,7 @@ function shopItems() {
       lvText: () => "Lv" + G.wall.lv,
       name: () => "升级城墙",
       desc: () => wallUpCost() == null ? "城墙已达最高等级" : ("每段 " + wallSegMax() + " → " + (wallSegMax() + WALL.segHpPerLv) +
-        " HP，并三段补满。<br>城墙是你唯一的容错缓冲。"),
+        " HP，三段补满\n城墙是你唯一的容错缓冲"),
       cost: () => wallUpCost() || 0,
       maxed: () => wallUpCost() == null,
       onBuy: () => upgradeWall(),
@@ -3735,9 +3693,9 @@ function shopItems() {
     return items;
   }
   const items = [
-    { k: "mine",   name: "金矿", max: 5, desc: lv => "被动税收 +" + ECON.taxPerMine + "/s（当前 " + taxRate().toFixed(1) + "/s）。<br>稳定保底收入，约 2-3 波回本。" },
-    { k: "market", name: "市场", max: 3, desc: lv => "击杀掉金 +25%/级（当前 " + Math.round(ECON.killGold * (1 + lv * 0.25)) + " 金/兵）。<br>出击流核心，约 2 波回本。" },
-    { k: "bank",   name: "银行", max: 3, desc: lv => "利息 +" + Math.round(ECON.bankRateStep * 100) + "%/级、上限 +" + ECON.bankCapStep + "/级<br>（当前 " + Math.round(interestRate() * 100) + "% · 上限 " + interestCap() + "）。<br>囤钱流核心，约 3 波回本。" },
+    { k: "mine",   name: "金矿", max: 5, desc: lv => "被动税收 +" + ECON.taxPerMine + "/s（当前 " + taxRate().toFixed(1) + "/s）\n稳定保底收入，约 2-3 波回本" },
+    { k: "market", name: "市场", max: 3, desc: lv => "击杀掉金 +25%/级（当前 " + Math.round(ECON.killGold * (1 + lv * 0.25)) + " 金/兵）\n出击流核心，约 2 波回本" },
+    { k: "bank",   name: "银行", max: 3, desc: lv => "利息 +" + Math.round(ECON.bankRateStep * 100) + "%/级、上限 +" + ECON.bankCapStep + "/级\n当前 " + Math.round(interestRate() * 100) + "% · 上限 " + interestCap() + " · 约 3 波回本" },
   ];
   return items.map(it => ({
     lvText: () => "Lv" + G.build[it.k] + "/" + it.max,
@@ -3752,116 +3710,49 @@ let shopCardsKey = "";   // 当前已构建外壳的页签（切页签才重建�
 function refreshShopUI() {
   if (G.mode !== "siege") return;
   const grid = $("shop-grid");
-  setText("shop-gold", Math.floor(G.gold));
-  setText("shop-tax", taxRate().toFixed(1) + "/s");
-  setText("shop-int", nextInterest());
-  $("shop-title").textContent = "经营 · 第 " + G.wave + " 波" +
-    (G.wave % WAVE.bossEvery === 0 ? "（BOSS 波）" : "") + " · 实时可买卖";
+  setText("sd-gold", Math.floor(G.gold));
+  setText("sd-tax", taxRate().toFixed(1));
+  setText("sd-int", nextInterest());
   const stBtn = $("btn-stance");
-  stBtn.textContent = G.stance === "hold" ? "当前：驻守（远程上墙 +50% 射程 / +20% 伤害）" : "当前：出击（主动接敌，多拿击杀金）";
+  // 底部经营条横向空间宝贵：姿态按钮只留状态词，完整说明进 title（悬停可见）
+  stBtn.textContent = G.stance === "hold" ? "驻守" : "出击";
+  stBtn.title = G.stance === "hold"
+    ? "当前：驻守（远程上墙 +50% 射程 / +20% 伤害）——点击切换为出击"
+    : "当前：出击（主动接敌，多拿击杀金）——点击切换为驻守";
 
   if (shopCardsKey !== shopTab || !grid.children.length) {
     shopCardsKey = shopTab;
     for (const ch of Array.prototype.slice.call(grid.children)) grid.removeChild(ch);
     for (const o of shopItems()) grid.appendChild(makeShopCard(o));
+    syncShopDock();          // 换页签卡片数不同，条子高度可能变，同步一次
   } else {
     for (const c of grid.children) renderShopCard(c);
   }
 }
-document.querySelectorAll(".shop-tab").forEach(b => {
+document.querySelectorAll("#sd-tabs .shop-tab").forEach(b => {
   b.onclick = () => {
+    initAudio();
     shopTab = b.dataset.tab;
-    document.querySelectorAll(".shop-tab").forEach(x => x.classList.toggle("on", x === b));
+    document.querySelectorAll("#sd-tabs .shop-tab").forEach(x => x.classList.toggle("on", x === b));
     refreshShopUI();
   };
 });
 $("btn-stance").onclick = toggleStance;
 $("btn-fight").onclick = () => { if (G.phase2 === "breather") { addGold(ECON.skipPrepBonus); startWave(); } };
-$("btn-shop-close").onclick = () => closeShop();
-$("btn-shop").onclick = () => { initAudio(); toggleShop(); };
 
-/* =========================================================================
-   守城常驻快捷购买条：6 兵种买兵 + 3 系科技升级。
-   设计意图：买兵 / 升级不再依赖打开商店面板——战斗中、喘息期都随时能点，
-   只要金币够。按钮外壳常驻，成本与可买性每帧原位刷新。
-   ========================================================================= */
-const QB_UNITS = [
-  { type: "melee",   name: "近战" },
-  { type: "ranged",  name: "远程" },
-  { type: "cavalry", name: "骑兵" },
-  { type: "medic",   name: "医师" },
-  { type: "mage",    name: "法师" },
-  { type: "sapper",  name: "爆破" },
-];
-const QB_TECH = [
-  { line: "melee",   name: "近↑" },
-  { line: "ranged",  name: "远↑" },
-  { line: "cavalry", name: "骑↑" },
-];
-let qbBuilt = false;
-function buildQuickbar() {
-  if (qbBuilt) return; qbBuilt = true;
-  const uWrap = $("qb-units"), tWrap = $("qb-tech");
-  QB_UNITS.forEach(({ type, name }) => {
-    const b = document.createElement("button");
-    b.className = "qb-btn"; b.dataset.buy = type;
-    b.innerHTML = '<span class="qb-n">' + name + '</span><span class="qb-c">0</span>';
-    b.onclick = () => qbBuyUnit(type, b);
-    uWrap.appendChild(b);
-  });
-  QB_TECH.forEach(({ line, name }) => {
-    const b = document.createElement("button");
-    b.className = "qb-btn"; b.dataset.tech = line;
-    b.innerHTML = '<span class="qb-n">' + name + '</span><span class="qb-c">0</span>';
-    b.onclick = () => qbBuyTech(line, b);
-    tWrap.appendChild(b);
-  });
-}
-function qbBuyUnit(type, btn) {
-  const cost = unitPrice(type);
-  if (G.gold < cost) { qbDeny(btn); return; }
-  if (buyUnit(type)) refreshQuickbar(); else qbDeny(btn);
-}
-function qbBuyTech(line, btn) {
-  const c = techCost(line);
-  if (c == null) return;                 // 已满级，按钮显示「满」不可点
-  if (G.gold < c) { qbDeny(btn); return; }
-  if (buyTech(line)) refreshQuickbar(); else qbDeny(btn);
-}
-function qbDeny(btn) {
-  if (!btn) return;
-  btn.classList.remove("deny"); void btn.offsetWidth; btn.classList.add("deny");
-  sfx("deny");
-}
-function refreshQuickbar() {
-  const bar = $("quickbar");
-  if (!bar) return;
-  const show = (G.mode === "siege" && !G.siegeOver);
-  bar.style.display = show ? "flex" : "none";
-  if (!show) return;
-  buildQuickbar();
-  setText("qb-gold", Math.floor(G.gold));
-  for (const b of $("qb-units").children) {
-    const cost = unitPrice(b.dataset.buy);
-    b.querySelector(".qb-c").textContent = cost;
-    const afford = G.gold >= cost;
-    b.classList.toggle("poor", !afford);
-    b.classList.toggle("afford", afford);
-  }
-  for (const b of $("qb-tech").children) {
-    const c = techCost(b.dataset.tech);
-    if (c == null) { b.querySelector(".qb-c").textContent = "满"; b.classList.add("maxed"); b.classList.remove("poor"); b.classList.remove("afford"); }
-    else { const afford = G.gold >= c; b.querySelector(".qb-c").textContent = c; b.classList.toggle("poor", !afford); b.classList.toggle("afford", afford); b.classList.remove("maxed"); }
-  }
+/* 1-6 数字键快捷买兵（底部经营条的可点替代，战斗中手不离开键盘时更快） */
+const QB_UNITS = ["melee", "ranged", "cavalry", "sapper", "medic", "mage"];
+function hotkeyBuyUnit(type) {
+  if (G.mode !== "siege" || G.siegeOver) return;
+  if (G.gold < unitPrice(type) || !buyUnit(type)) sfx("deny");
+  refreshShopUI();
 }
 
-/* 自动征收 UI 已移除（数值并入税收）。下方为守城专属 UI 收起逻辑。 */
-
-/* 竞技场模式下收起守城专属 UI（金库/墙血） */
+/* 竞技场模式下收起守城专属 UI（金库/墙血/底部经营条） */
 function hideSiegeChrome() {
   const gp = $("hud-gold"); if (gp && gp.style.display !== "none") gp.style.display = "none";
   const wh = $("wall-hud"); if (wh && wh.style.display !== "none") wh.style.display = "none";
-  const sb = $("btn-shop"); if (sb && sb.style.display !== "none") sb.style.display = "none";
+  syncShopDock();
 }
 
 /* 守城模式 HUD：金库 + 波次 + 城墙三段血条 */
@@ -3927,7 +3818,6 @@ function startGame(mode) {
   $("menu").classList.remove("show");
   $("end").classList.remove("show");
   $("upgrade").classList.remove("show");
-  $("shop").classList.remove("show");
   resetGame();
   G.mode = mode;
   G.diffMul = pickDiff;
@@ -3935,16 +3825,19 @@ function startGame(mode) {
     // 送两个起手兵，避免开局空城的茫然感；真正的第一课是「用 120 金买什么」
     buyUnit("melee"); buyUnit("ranged");
     // 实时：直接进入「短喘息」准备第 1 波——战斗相位恒定，世界不暂停。
-    // 商店默认收起（左侧常驻面板会盖住战场左路），战斗中随时点主城 /「商店」按钮再开；
-    // 买兵/升科技走底部常驻快捷条即可，无需开着商店面板。
+    // 经营条常驻底部，现在就该开始花钱：第 1 波来袭前先把起手金花出去。
     G.phase = "battle";
     G.wave = 1;
     G.phase2 = "breather";
     G.interT = WAVE.firstDelay;
     G.spawnQueue = [];
-    const sb = $("btn-shop"); if (sb) sb.style.display = "";
-    banner("守城远征 · 第 1 波即将来袭 · 点主城或「商店」可开商店，战斗中也能随时买兵 / 升级");
+    shopTab = "unit";                       // 开新局回到买兵页：第一决策永远是「这 120 金买什么」
+    document.querySelectorAll("#sd-tabs .shop-tab").forEach(x => x.classList.toggle("on", x.dataset.tab === "unit"));
+    shopCardsKey = "";
+    refreshShopUI();
+    banner("守城远征 · 第 1 波即将来袭 · 底部经营条随时买兵 / 升科技 / 修墙 / 建经济");
   } else {
+    syncShopDock();
     startRound();
   }
   updateHud();
@@ -3982,10 +3875,10 @@ function cheer() {
 
 document.addEventListener("keydown", e => {
   if (e.code === "Space") { e.preventDefault(); spaceHeld = true; }
-  else if (e.code === "KeyB") { if (G.mode === "siege" && G.phase === "battle") toggleShop(); }   // B = Buy，开关商店（看城墙/经济/姿态细节）
   else if (G.mode === "siege" && !G.siegeOver) {
+    // 1-6 快捷买兵：与底部经营条「买兵」页从左到右的顺序一致
     const idx = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6"].indexOf(e.code);
-    if (idx >= 0) { e.preventDefault(); const u = QB_UNITS[idx]; if (u) qbBuyUnit(u.type, $("qb-units").children[idx]); }   // 1-6 快捷买兵，战斗中也能点
+    if (idx >= 0) { e.preventDefault(); const t = QB_UNITS[idx]; if (t) hotkeyBuyUnit(t); }
   }
 });
 document.addEventListener("keyup", e => { if (e.code === "Space") spaceHeld = false; });
@@ -4000,16 +3893,10 @@ function onCanvasClick(e) {
   if (sx < 0 || sx > CONFIG.worldW || sy < 0 || sy > CONFIG.worldH) return; // 信箱区（黑边）忽略点击
   // 优先级 1：正在瞄准指令技能 → 释放
   if (G.cmd.armed) {
-    const w = unproject(sx, sy);
-    castCmd(G.cmd.armed, w.x, w.y);
+    castCmd(G.cmd.armed, unproject(sx, sy).x, unproject(sx, sy).y);
     return;
   }
-  // 优先级 2（守城模式）：点自己的主城（金库）→ 开/关商店。
-  // 判定区放宽到主城附近一片（世界 x<190, y>120），比像素级精确更好点。
-  if (G.mode === "siege" && !G.siegeOver) {
-    const w = unproject(sx, sy);
-    if (w.x < 190 && w.y > 120) { initAudio(); toggleShop(); }
-  }
+  // 商店已改为底部常驻经营条，点主城不再绑定任何行为——战场点击只服务于指令技能。
 }
 canvas.addEventListener("click", onCanvasClick);
 

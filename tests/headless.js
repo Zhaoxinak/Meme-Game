@@ -36,7 +36,18 @@ function makeEl(tag) {
     offsetWidth: 1000, offsetHeight: 520, scrollTop: 0,
     style: {}, onclick: null, parentNode: null,
   };
-  el.style = new Proxy({}, { get: (t, k) => (k in t ? t[k] : ""), set: (t, k, v) => { t[k] = v; return true; } });
+  // CSSStyleDeclaration 最小桩：除普通属性读写外，还要支持 CSS 自定义属性的 getPropertyValue/setProperty
+  // （底部经营条用 --dock-h 把高度传给战场布局），否则游戏代码在真实浏览器能跑、在测试台报错。
+  const cssVars = new Map();
+  el.style = new Proxy({}, {
+    get: (t, k) => {
+      if (k === "getPropertyValue") return n => (cssVars.has(n) ? cssVars.get(n) : (n in t ? t[n] : ""));
+      if (k === "setProperty") return (n, v) => { cssVars.set(n, String(v)); t[n] = String(v); };
+      if (k === "removeProperty") return n => { cssVars.delete(n); delete t[n]; };
+      return (k in t ? t[k] : "");
+    },
+    set: (t, k, v) => { t[k] = v; return true; },
+  });
   el.classList = {
     _s: new Set(),
     add(...c) { c.forEach(x => this._s.add(x)); },
@@ -178,9 +189,12 @@ function loadGame(seed) {
   countPlayerUnits, waveBudget, waveEnemyLevel, buildWaveQueue, siegeShouldHitWall,
   addGold, taxRate, nextInterest, interestRate, interestCap, killReward,
   startWave, endWave,
-  showShop, closeShop, toggleShop, refreshShopUI, onCanvasClick, castCmd,
+  // 商店已改为底部常驻经营条：toggleShop/showShop/closeShop 一并删除，
+  // 现在只有 refreshShopUI（重刷卡片）+ syncShopDock（显隐/高度同步）两个入口。
+  refreshShopUI, syncShopDock, hotkeyBuyUnit, onCanvasClick, castCmd,
   getShopGrid() { return document.getElementById("shop-grid"); },
-  getShopEl() { return document.getElementById("shop"); },
+  getShopDock() { return document.getElementById("shopdock"); },
+  setShopTab(t){ shopTab = t; refreshShopUI(); },
   draw,
   VIEW, resize,
   setDiff(d){ pickDiff = d; },
