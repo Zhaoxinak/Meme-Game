@@ -40,6 +40,9 @@ function update(dt) {
   if (G.cheer.active) { G.cheer.t -= dt; if (G.cheer.t <= 0) G.cheer.active = false; }
   if (G.cheer.cd > 0) G.cheer.cd -= ms;
 
+  /* 英雄状态：士气自然回复 + 大招倒计时 + 退场倒计时 + AI 自动放/玩家输入由 loop.js 处理 */
+  if (FLAGS.hero) updateHero(dt);
+
   /* 解说弹幕 */
   G.cmtT -= dt;
   if (G.cmtT <= 0) { pushCommentary(); G.cmtT = 2.6 + Math.random() * 2.6; }
@@ -65,6 +68,10 @@ function update(dt) {
       u.deathT += dt;
       continue;
     }
+    // 英雄退场中：已离场（x 在战场外），不参与任何战斗 AI。
+    // 必须显式跳过 —— 英雄永不 dead（v5 §5 纪律③），若跟着下面的通用分支走，
+    // state 会被寻敌逻辑覆写成 "move"/"attack"，退场状态形同虚设、返场倒计时也永远走不完。
+    if (u.isHero && u.state === "retreat") continue;
     u.flash -= dt; u.swing -= dt;
     if (u.buffT > 0) { u.buffT -= dt; if (u.buffT <= 0) { u.buffAtkMul = 1; u.buffSpdMul = 1; } }
     if (u.skillCd > 0) u.skillCd -= ms;
@@ -213,7 +220,16 @@ function update(dt) {
 
   /* 胜负检测（单次遍历计数，避免每帧多次 filter 分配） */
   let pa = 0, ea = 0;
-  for (const u of G.units) { if (u.dead || u.hp <= 0) continue; if (u.side === "player") pa++; else ea++; }
+  for (const u of G.units) {
+    if (u.dead || u.hp <= 0) continue;
+    // 英雄不参与「全灭」判定 —— 这是 v5 §5 纪律③（英雄不死亡，只退场）的必然后果。
+    // 英雄永远存在于 G.units（退场只是 state="retreat"，dead 仍为 false），
+    // 若计入存活数，双方各有一个永生英雄 → `pa===0 || ea===0` 永不成立 → 战斗永远结束不了。
+    // 设计立场：胜负由军团决定，英雄是加成不是胜负条件（纪律①）。
+    // 否则「双方英雄残局互磨」会把每一轮都拖满 75s 时限。
+    if (FLAGS.hero && u.isHero) continue;
+    if (u.side === "player") pa++; else ea++;
+  }
   if (G.mode === "siege") {
     // 守城模式：全灭不等于失败（可以再买兵），只有主城被打爆才算输
     if (ea === 0 && G.spawnQueue.length === 0) endWave(true);
@@ -390,5 +406,52 @@ function aiDrawPerk() {
   const p = pool[Math.floor(Math.random() * pool.length)];
   p.apply(G.enemyMods);
   G.aiPerk = p.name;
+}
+
+/* ================= 英雄驱动（v5 §5） ================= */
+/* 每帧推进：morale 自然回 / 大招生效倒计时 / 大招 cd / 退场返场倒计时 /
+   AI 自检「满气就放」防憋气。
+   玩家手动放大招由 loop.js 监听键位调 castHeroUlt() —— 不在这里轮询键盘。 */
+function updateHero(dt) {
+  for (const side of ["player", "enemy"]) {
+    const hs = heroState(side); if (!hs) continue;
+    if (hs.ultT > 0) hs.ultT = Math.max(0, hs.ultT - dt);
+    if (hs.ultCd > 0) hs.ultCd = Math.max(0, hs.ultCd - dt);
+
+    // heroEntity 找实体（含退场中的），heroOf 只认"能打的"——退场判断收敛在 utils 里
+    const ent = heroEntity(side);
+
+    // ① 退场中：只走返场倒计时。不回士气、不放招、不参与任何战斗结算。
+    //    原实现把 `continue` 写在循环体最后一行（根本没跳过任何东西），
+    //    导致退场期间 AI 照常放大招 —— 特效播在 x=-60 的场外，玩家看不见但资源已消耗。
+    if (ent && ent.state === "retreat") {
+      if (hs.retreatT > 0) {
+        hs.retreatT = Math.max(0, hs.retreatT - dt);
+        if (hs.retreatT === 0) {
+          ent.x = side === "player" ? 45 : CONFIG.worldW - 45;
+          ent.y = 240;
+          ent.hp = Math.max(1, Math.round(ent.maxHp * HERO_CFG.retreatHpPct));
+          ent.dying = false;                    // 与 retreatHero 里的清理互为冗余，别只留一处
+          ent.state = "move"; ent.stateT = 0;
+          addEffect("ring", ent.x, ent.y, { r: 60, color: "#c9b037", glow: "#fff3c1" });
+        }
+      }
+      continue;
+    }
+
+    // ② 场上没有英雄实体（本轮还没生成 / 已被清理）→ 只推进退场倒计时
+    if (!ent) {
+      if (hs.retreatT > 0) hs.retreatT = Math.max(0, hs.retreatT - dt);
+      continue;
+    }
+
+    // ③ 在场：士气自然回复 + AI 满气自动放大招
+    if (hs.ultT === 0) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moraleRegen * dt);
+    if (side === "enemy" && FLAGS.heroUlt && hs.ultT === 0 && hs.ultCd === 0 && hs.morale >= HERO_CFG.moraleMax) {
+      castHeroUlt("enemy");
+    }
+    // 兜底：非 damageUnit 路径（AOE / 指令）导致 HP 归零时也走退场，不要真死
+    if (ent.hp <= 0 && ent.state !== "retreat") retreatHero(ent);
+  }
 }
 

@@ -318,6 +318,11 @@ function cheer() {
 
 document.addEventListener("keydown", e => {
   if (e.code === "Space") { e.preventDefault(); spaceHeld = true; }
+  else if (e.code === "KeyQ" && G.phase === "battle" && FLAGS.hero && FLAGS.heroUlt) {
+    // 英雄大招手动触发：与 AI 满气自动放共享同一入口 castHeroUlt()
+    // —— 失败时（未满气/cd 中）静默，不弹任何提示，避免在战斗中打断节奏
+    e.preventDefault(); castHeroUlt("player");
+  }
   else if (G.mode === "siege" && !G.siegeOver) {
     // 1-6 快捷买兵：与底部经营条「买兵」页从左到右的顺序一致
     const idx = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6"].indexOf(e.code);

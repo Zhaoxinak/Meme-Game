@@ -37,6 +37,13 @@ function resetGame() {
     // 应援：active 持续 cheerDur 秒，cd 冷却
     cheer: { active: false, t: 0, cd: 0 },
     cmd: { armed: null, cd: { strike: 0, heal: 0 } },
+    // 英雄状态（双方各一份，结构完全相同 → 对称）。
+    // morale 士气（0-100，满可放大招）；ultT 大招剩余生效时长；ultCd 大招冷却；
+    // retreatT 退场倒计时（>0 表示在场外）；lv 英雄等级（守城模式用金币提升）
+    hero: {
+      p: { key: "guardian", morale: 0, ultT: 0, ultCd: 0, retreatT: 0, lv: 1 },
+      e: { key: "guardian", morale: 0, ultT: 0, ultCd: 0, retreatT: 0, lv: 1 },
+    },
     hitStop: 0,
     bigText: null,
 
@@ -107,6 +114,46 @@ function makeUnit(side, type, level, x, y, branch) {
     deathT: 0, dustT: Math.random() * 0.25,
   };
 }
+/* ================= 英雄 ================= */
+/* 取某阵营的英雄状态。所有英雄相关读写都必须经这里，禁止直接写 G.hero.p / G.hero.e，
+   否则敌我逻辑会分叉 —— 这是「战术卡只归玩家」那个 bug 的同类错误（见 v5 §0）。 */
+function heroState(side) {
+  if (!G || !G.hero) return null;
+  return G.hero[side === "player" ? "p" : "e"] || null;
+}
+function makeHero(side, heroKey, level, x, y) {
+  const def = HEROES[heroKey] || HEROES[HERO_KEYS[0]];
+  const base = UNIT_DEFS.melee;                       // 英雄骨架沿用近战（复用 kairo* 绘制，零新美术骨架）
+  const lv = Math.max(1, Math.min(5, level | 0));
+  const hp  = Math.round(base.hp  * Math.pow(CONFIG.lvHpMul,  lv - 1) * HERO_CFG.hpMul);
+  const atk = Math.round(base.atk * Math.pow(CONFIG.lvAtkMul, lv - 1) * HERO_CFG.atkMul);
+  return {
+    id: nextId++, side, type: "melee", level: lv, branch: null,
+    isHero: true, heroKey: def.key,
+    x, y, vx: 0, vy: 0, angle: 0, spin: 0,
+    hp, maxHp: hp, atk,
+    range: base.range, speed: HERO_CFG.speed, atkCdMs: base.atkCdMs,
+    radius: HERO_CFG.radius,
+    facing: side === "player" ? 1 : -1,
+    state: "move", stateT: 0, attackT: 0, target: null,
+    skillCd: 0, skill: SKILLS.melee[lv - 1],
+    buffT: 0, buffAtkMul: 1, buffSpdMul: 1,
+    charging: false, chargeDir: 0, chargeT: 0, chargeHit: null,
+    flash: 0, swing: 0, walkPhase: Math.random() * 6.28, dead: false,
+    deathT: 0, dustT: Math.random() * 0.25,
+    homeX: null, homeY: null,   // 守城驻守阵位（竞技场不用，但 update 会读，必须存在）
+  };
+}
+function spawnHero(side) {
+  const st = heroState(side);
+  if (!st) return;
+  // 英雄等级 = 该侧「最高兵种等级」：让英雄强度跟随场上战力，不与军团脱节。
+  // 守城模式下改用 st.lv（由金币养成驱动），竞技场则跟随兵种等级保持对称。
+  const lvMap = side === "player" ? G.playerLv : G.enemyLv;
+  const lv = G.mode === "siege" ? st.lv : Math.max(lvMap.melee, lvMap.ranged, lvMap.cavalry);
+  const x = side === "player" ? 45 : CONFIG.worldW - 45;   // 最后排：玩家最左，敌人最右
+  G.units.push(makeHero(side, st.key, lv, x, 240));
+}
 function spawnArmy(side) {
   const base = ROUND_SIZES[G.round - 1];
   const per = Math.floor(base / 3);
@@ -130,5 +177,8 @@ function spawnArmy(side) {
       G.units.push(makeUnit(side, baseType, lv[baseType], x, y, br[baseType]));
     }
   });
+  // 英雄上场：本轮只在竞技场模式出。
+  // 守城模式涉及 stance（驻守/出击）与城墙站位，需要单独处理，不在这里塞。
+  if (FLAGS.hero && G.mode !== "siege") spawnHero(side);
 }
 

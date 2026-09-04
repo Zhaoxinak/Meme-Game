@@ -4,6 +4,7 @@
  * ============================================================================= */
 
 /* ================= 工具 ================= */
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function compact(arr, keep) { let w = 0; for (let i = 0; i < arr.length; i++) { if (keep(arr[i])) arr[w++] = arr[i]; } arr.length = w; }
 function counterMul(atk, def) {
   // 基础克制 +35%（近战→骑兵→远程→近战）。
@@ -19,8 +20,11 @@ function counterMul(atk, def) {
     const vs = ab.trait.atkMulVs[def.type];
     if (vs) m = Math.max(m, vs);
   }
-  if (m <= 1 || atk.side !== "player") return m;   // 克制加成只归我方
-  return m * (1 + (G.mods.counterBonus || 0));
+  if (m <= 1) return m;
+  // 克制加成只归该侧：玩家 → G.mods.counterBonus；AI → G.enemyMods.counterBonus
+  // (对称基线，参见 state.js modsOf 设计纪律 — 早期写死 player 是 v5 §0 的 bug)
+  const bonus = (modsOf(atk.side).counterBonus) || 0;
+  return m * (1 + bonus);
 }
 function findNearest(u) {
   let best = null, bd = 1e9;
@@ -60,6 +64,8 @@ function cheerSpdMul(u) {
 }
 function knockUnit(u, kx, ky) {
   if (u.dead || u.state === "dead") return;
+  // 英雄大招「不动如山」期间免击退：在大招时间窗内，任何击退尝试都直接被吃掉
+  if (FLAGS.hero && FLAGS.heroUlt && u.isHero && heroUltImmuneKnock(u)) return;
   // 击退改为贴地水平位移 + 短暂踉跄；只做一个落地「小跳」的演出位移，绝不真正升空（真实战场）。
   u.vx = kx; u.vy = 0;
   u.state = "knocked"; u.stateT = 0.5;
@@ -83,11 +89,21 @@ function damageUnit(u, dmg, attacker, knock, knockY) {
     const tm = db.trait.takeMoreVs;
     if (tm && tm[attacker.type]) dmg *= tm[attacker.type];
   }
+  // 英雄光环减伤：英雄在场的同阵营友军吃到常驻/大招减伤（硬上限 0.6 → 至少承受 40% 伤害）
+  if (FLAGS.hero) dmg *= heroAuraReduce(u);
   u.hp -= dmg; u.flash = 0.12;
   u.lastAttacker = attacker;
+  // 英雄受击 + moralePerHit 怒气：按「次」不按伤害量，避免被高伤单位一次刷爆
+  if (FLAGS.hero && FLAGS.heroUlt && u.isHero) {
+    const hs = heroState(u.side); if (hs) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moralePerHit);
+  }
   if (knock > 0) knockUnit(u, u.x >= attacker.x ? knock : -knock, knockY || 180);
   if (u.hp <= 0) {
     u.hp = 0;
+    // 英雄不走死亡结算，一律退场（v5 §5 纪律③「不死亡，只退场」）。
+    // 原逻辑下「最后一击带不带击退」决定英雄是退场（knocked→dying）还是真死（finishKill）
+    // ——系统的存在方式不该由攻击类型决定。
+    if (FLAGS.hero && u.isHero && u.state !== "retreat") { retreatHero(u); return; }
     if (u.state !== "knocked") finishKill(u, attacker);
     else u.dying = true;
   }
@@ -96,6 +112,10 @@ function finishKill(u, attacker) {
   u.dying = true; u.dead = true; u.state = "dead"; u.stateT = 1.4;
   if (attacker.side === "player") { G.pKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
   else G.eKills++;
+  // 英雄士气（己方任意单位击杀 → 该侧英雄 + moralePerKill，避免英雄抢人头成最优解）
+  if (FLAGS.hero && FLAGS.heroUlt && attacker && attacker.side && !u.isHero) {
+    const hs = heroState(attacker.side); if (hs) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moralePerKill);
+  }
   // 守城模式：击杀掉金（战斗即经济，这是「出击」流派的主要收入）
   if (G.mode === "siege" && u.side === "enemy") addGold(killReward(u), u.x, u.y);
   if (G.mode === "siege" && u.side === "player") G.waveLoss++;
@@ -125,6 +145,110 @@ function pushFeed(victim, killer) {
     (killer && killer.side === "player" ? "我方" : "敌方") + "「" + kname + "」击杀";
   feed.appendChild(line);
   while (feed.children.length > 5) feed.removeChild(feed.firstChild);
+}
+
+/* ================= 英雄辅助（v5 §5） ================= */
+/* 英雄实体（含退场中的）。退场英雄仍在 G.units 里（dead=false, state="retreat"），
+   只是不该参与战斗结算 —— 所以查找分成两层：heroEntity 找实体，heroOf 找"能打的"。
+   缓存：heroAuraReduce 每次伤害结算都要问一次英雄是谁，逐帧缓存避免 O(n²)
+   （峰值 80 单位 × 每秒上百次伤害）。缓存只活一帧，死亡/退场最迟下一帧生效。 */
+let _heroCacheT = -1;
+const _heroCache = { player: null, enemy: null };
+function heroEntity(side) {
+  if (!FLAGS.hero) return null;
+  if (G.t !== _heroCacheT) {
+    _heroCacheT = G.t;
+    _heroCache.player = null; _heroCache.enemy = null;
+    for (const u of G.units) {
+      if (!u.isHero || u.dead || u.state === "dead") continue;
+      if (!_heroCache[u.side]) _heroCache[u.side] = u;
+    }
+  }
+  return _heroCache[side] || null;
+}
+/* 取某侧「在场可战斗」的英雄。退场中（state === "retreat"）返回 null，
+   光环 / 免击退 / AI 放大招随之全部失效 —— 状态判断收敛在这一处，
+   不在每个调用点重复写，避免再次出现"注释说过滤了、代码没过滤"。 */
+function heroOf(side) {
+  const u = heroEntity(side);
+  return u && u.state !== "retreat" ? u : null;
+}
+/* 该单位是否正站在己方英雄光环里：常驻 + 大招叠加，硬上限由 auraHardCap 控制。
+   返回「乘子」——damageUnit 直接乘到最终伤害上（< 1 表示减伤）。
+   注意：英雄自身也在光环里（光环半径包住自身），所以也吃自己的减伤。
+   这是有意的：英雄免疫群体小伤、但吃单体大伤 — 避免被人海淹没。 */
+function heroAuraReduce(unit) {
+  const hero = heroOf(unit.side);
+  if (!hero) return 1;
+  const def = HEROES[hero.heroKey];
+  if (!def) return 1;
+  const dist = Math.hypot(unit.x - hero.x, unit.y - hero.y);
+  if (dist > def.aura.radius) return 1;
+  let reduce = def.aura.reduce;
+  // 大招期间额外减伤：把「基础 + 额外」叠加后再钳制
+  const hs = heroState(hero.side);
+  if (FLAGS.heroUlt && hs && hs.ultT > 0 && def.ult.extraReduce) {
+    reduce = Math.min(1, reduce + def.ult.extraReduce);
+  }
+  // 减伤硬上限：防止与其他增益叠加破表（auraHardCap = 0.6 → 最多减 60%）
+  return clamp(1 - reduce, 1 - HERO_CFG.auraHardCap, 1);
+}
+/* 大招免击退判定：在 ultT 时间窗内，击退一律被吃掉（不掉血、不出声、不重置状态）。 */
+function heroUltImmuneKnock(unit) {
+  if (!unit.isHero) return false;
+  const hs = heroState(unit.side);
+  return !!(hs && hs.ultT > 0);
+}
+/* 触发英雄大招（手动：玩家按 Q；自动：AI morale 满自动放）。
+   共享同一入口以确保：cd/dur/durAudio/演出 全部一致。
+   — 守城模式：额外回血城墙（wallHealPct × 每段当前损失比，反向回写到 segs[i]）。
+   — 竞技场：仅吃光环 + 免击退，无城墙可修。 */
+function castHeroUlt(side) {
+  if (!FLAGS.hero || !FLAGS.heroUlt) return false;
+  const hs = heroState(side); if (!hs) return false;
+  const hero = heroOf(side); if (!hero) return false;
+  if (hs.ultCd > 0 || hs.ultT > 0 || hs.morale < HERO_CFG.moraleMax) return false;
+  const def = HEROES[hs.key]; if (!def || !def.ult) return false;
+  hs.ultCd = def.ult.cd;
+  hs.ultT  = def.ult.dur;
+  // 不扣 morale：放大招是一锤子「点燃」动作；之后 morale 重新自然回，这是有意的
+  // ——憋一发 5 秒大招后，再等 cd 跟 100 士气，循环节奏跟战斗节奏对齐。
+  addEffect("ring", hero.x, hero.y, { r: def.aura.radius, color: "#c9b037", glow: "#fff3c1" });
+  spawnParticles(hero.x, hero.y, { count: 22, color: "#ffd479", speed: 220, life: 1.0, grav: -60, size: 5 });
+  shake(0.5); sfx("skill");
+  pushBig(side === "player" ? `${def.name} 发动 · ${def.ult.name}` : `敌方 · ${def.name} · ${def.ult.name}`);
+  // 守城模式：城墙每段回血 wallHealPct
+  if (G.mode === "siege" && def.ult.wallHealPct) {
+    const max = wallSegMaxHp();
+    for (let i = 0; i < G.wall.segs.length; i++) {
+      const cap = max - G.wall.segs[i];
+      G.wall.segs[i] = Math.min(max, G.wall.segs[i] + cap * def.ult.wallHealPct);
+    }
+    shake(0.6);
+  }
+  return true;
+}
+/* 英雄在战场外的退场倒计时（被击退不退场 — knockUnit 不杀英雄；只有 HP=0 触发）。
+   退场后 30 秒 + 50% HP 返场。原 makeHero / makeUnit 都设置了 homeX/homeY 字段，
+   这里返场时把 homeX 设回以便守城驻守阵位（竞技场不需要）。 */
+function retreatHero(hero) {
+  if (hero.state === "retreat" || hero.state === "dead") return;
+  hero.state = "retreat";
+  hero.stateT = HERO_CFG.retreatTime;
+  hero.hp = Math.max(1, Math.round(hero.maxHp * HERO_CFG.retreatHpPct));
+  // 必须清 dying：damageUnit 首行守卫是 `if (u.dead || u.dying) return`，
+  // 而英雄 HP 归零时若处于 knocked 状态只置 dying=true 不走 finishKill。
+  // 不清 → 英雄返场后永久免疫一切伤害 → 双方英雄残局互锁、战斗打不完。
+  hero.dying = false;
+  hero.target = null;
+  hero.x = hero.side === "player" ? -60 : CONFIG.worldW + 60;
+  hero.y = 240;
+  hero.vx = 0; hero.vy = 0;
+  // 退场也清掉 heroState.retreatT，让返场逻辑跑自己的倒计时
+  const hs = heroState(hero.side);
+  if (hs) hs.retreatT = HERO_CFG.retreatTime;
+  addEffect("ring", hero.x, hero.y, { r: 32, color: "#c9b037", glow: "#fff3c1" });
+  pushFeed(hero, { side: hero.side === "player" ? "enemy" : "player", type: "melee", branch: null, level: 1, isCommander: true });
 }
 
 /* ================= 粒子（对象池 + 原地压缩，避免每帧分配） ================= */

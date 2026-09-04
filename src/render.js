@@ -373,8 +373,87 @@ function drawUnit(u) {
   ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
   ctx.fillStyle = u.hp / u.maxHp > 0.5 ? "#7fd6a8" : u.hp / u.maxHp > 0.25 ? "#ffd479" : "#ff6a6a";
   ctx.fillRect(bx, by, bw * Math.max(0, u.hp / u.maxHp), bh);
+
+  /* 英雄增显：金色描边 + 头顶★ + 怒气条 + 大招光圈（v5 §5）——所有差异都来自 isHero 字段，不修改 kairoBody */
+  if (u.isHero) {
+    drawHeroFx(u);
+  }
 }
 
+function drawHeroFx(u) {
+  const def = HEROES[u.heroKey];
+  if (!def) return;
+  const R = u.radius;
+  const k = R / 22;                       // 22 = 英雄基础半径，归一化缩放
+  // ① 头顶金星：玩家与 AI 都能一眼识别「大人物」，金色高对比
+  ctx.save();
+  ctx.translate(u.x, u.y - R * 3.4);
+  ctx.fillStyle = "#c9b037";
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+    const ra = i % 2 === 0 ? 4.4 * k : 1.9 * k;
+    const x = Math.cos(a) * ra, y = Math.sin(a) * ra;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    const a2 = a + Math.PI / 5;
+    const ra2 = i % 2 === 0 ? 1.9 * k : 4.4 * k;
+    ctx.lineTo(Math.cos(a2) * ra2, Math.sin(a2) * ra2);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(20,16,12,.75)"; ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+  // ② 金色外边光：让英雄即使在大堆单位里也立刻被找到
+  ctx.save();
+  ctx.shadowColor = "#c9b037"; ctx.shadowBlur = 14;
+  ctx.strokeStyle = "#fff3c1"; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(u.x, u.y, R * 1.15, 0, 6.283); ctx.stroke();
+  ctx.restore();
+  // ③ 怒气条（独立于 HP 条）：紧贴脚下，宽度 ≈ HP 血条，给颜色按满气渐变
+  const hs = heroState(u.side);
+  if (hs) {
+    const bw = R * 2.6, bh = 3;
+    const bx = u.x - bw / 2, by = u.y + R * 1.05;
+    ctx.fillStyle = "rgba(20,16,12,.55)";
+    ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+    const r = hs.morale / HERO_CFG.moraleMax;
+    ctx.fillStyle = hs.ultT > 0 ? "#fff3c1" : (r < 0.4 ? "#5e7fb8" : r < 0.85 ? "#c9b037" : "#ffd479");
+    ctx.fillRect(bx, by, bw * r, bh);
+    // 大招 CD：另一根薄条，亮黄色背景 + 黑色覆盖表示剩余冷却
+    const cdw = bw, cdh = 2;
+    const cdbx = bx, cdy = by + bh + 1;
+    ctx.fillStyle = "rgba(255,255,200,.18)";
+    ctx.fillRect(cdbx, cdy, cdw, cdh);
+    if (hs.ultCd > 0) {
+      const ultCd = HEROES[hs.key].ult.cd;
+      ctx.fillStyle = "rgba(20,16,12,.55)";
+      const remain = hs.ultCd / ultCd;
+      ctx.fillRect(cdbx, cdy, cdw * Math.min(1, remain), cdh);
+    }
+    // 大招激活时的光环外圈脉冲：纯渲染层效果，不影响数值。
+    // 脉动必须用全局场景时间 sceneT（单调递增），不能用 ultT 推导 ——
+    // 用 ultT 得到的相位单调 0→1，sin() 只会漂移一次，出不来"脉冲"。
+    if (hs.ultT > 0) {
+      const dur = HEROES[hs.key].ult.dur;
+      const fade = 1 - hs.ultT / dur;                       // 0→1 淡出包络
+      const pulse = 0.65 + 0.35 * Math.sin(sceneT * 9);     // 真·周期脉动
+      ctx.save();
+      ctx.globalAlpha = 0.6 * fade * pulse;
+      ctx.strokeStyle = "#fff3c1"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(u.x, u.y, def.aura.radius + Math.sin(sceneT * 9) * 5, 0, 6.283); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // ④ 地面光环圈（常驻）：淡金色虚线，让玩家看到「这片区域享受减伤 / 大招增益」
+  ctx.save();
+  ctx.strokeStyle = hs && hs.ultT > 0 ? "rgba(255,243,193,.45)" : "rgba(201,176,55,.28)";
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -sceneT * 18;     // 慢跑马灯，提示「这里有光环」
+  ctx.beginPath(); ctx.arc(u.x, u.y, def.aura.radius, 0, 6.283); ctx.stroke();
+  ctx.restore();
+}
 function pxb(x, y, w, h, fill) {
   ctx.fillStyle = fill;
   ctx.fillRect(x, y, w, h);

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="BgC35PqIRm6nxIsyQ5is58">
-<head data-page-node-id="ZEjgEaZQr0pxsFbveGYqVB">
-<meta charset="UTF-8" data-page-node-id="iFhE29DNp4OJVsXPJCPb1D">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="NsCAW81yBOx7Xo7CRU4Hji">
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>脑洞军团大乱斗 · 沙雕自动对战</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23221a30'/%3E%3Crect x='6' y='2' width='4' height='2' fill='%23ffd479'/%3E%3Crect x='7' y='3' width='2' height='8' fill='%23f7e7c6'/%3E%3Crect x='5' y='11' width='6' height='2' fill='%23e86a33'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%232e1c0c'/%3E%3C/svg%3E" data-page-node-id="35VELl7qbkEj3kd7J6jgbz">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23221a30'/%3E%3Crect x='6' y='2' width='4' height='2' fill='%23ffd479'/%3E%3Crect x='7' y='3' width='2' height='8' fill='%23f7e7c6'/%3E%3Crect x='5' y='11' width='6' height='2' fill='%23e86a33'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%232e1c0c'/%3E%3C/svg%3E">
 <style>/* ====== style/base.css ====== */
 /* =============================================================================
  * base.css — 布局骨架 + 竞技场 UI + 全屏规则
@@ -70,7 +70,6 @@
     /* --dock-h：底部常驻经营条实测高度（JS 写入）。战场用 padding-bottom 让出这段空间，
        保证经营条永不遮挡单位；0 时（竞技场模式）布局与原来完全一致。 */
     --dock-h:0px;
-    padding-bottom: var(--dock-h, 0px);   /* 真正让位：canvas content box 缩短，dock 恰好占住这段 */
     background:#0c1422; border:none; overflow:hidden;
     box-shadow:0 10px 36px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
   }
@@ -539,126 +538,125 @@
 
 </style>
 </head>
-<body data-page-node-id="gvvg6CWepKFZx5kDmmD8Gg">
-<div id="app" data-page-node-id="GdRr1HDMtkj5zAAZ20Fx0i">
-  <h1 data-page-node-id="x1CZhBu5pQT4tjNsDLGtEs">脑洞军团大乱斗</h1>
-  <div class="sub" data-page-node-id="TK0tDY8IGc5gbU4Hy5oq8O">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
-  <div id="hud" data-page-node-id="GPK1wL2LTlIcs9hEJUWy6r">
-    <div class="hud-box" data-page-node-id="TBnFRfSlFEx5g4fGEEp2pG">
-      <span id="hud-round" data-page-node-id="xYShwN2R9hQQbPGWNsH1Be">回合 -</span>
-      <span id="hud-size" data-page-node-id="4sNFi31aEbA0lqs8qMMJY2">兵力 -</span>
-      <span class="gold-pill" id="hud-gold" style="display:none;" data-page-node-id="njsoCn6xlZtnhZ3LpCS71w"><span class="coin" data-page-node-id="k3yXeUmGW54osYvadsT87t"></span><span id="hud-gold-v" data-page-node-id="USEdkFpQzdXPUHIb7TBCgx">0</span></span>
+<body>
+<div id="app">
+  <h1>脑洞军团大乱斗</h1>
+  <div class="sub">自动对战 · 兵力递增 · 文明史升级 · 概率大招 · 全员沙雕 · 你还能下场应援</div>
+  <div id="hud">
+    <div class="hud-box">
+      <span id="hud-round">回合 -</span>
+      <span id="hud-size">兵力 -</span>
+      <span class="gold-pill" id="hud-gold" style="display:none;"><span class="coin"></span><span id="hud-gold-v">0</span></span>
     </div>
-    <div class="hud-box" data-page-node-id="MMGqYVBSpUXMdJ0e5xBi4j">
-      <span class="hud-item" data-page-node-id="EUypVoUMVhLM16T13Lypab"><span class="dot blue" data-page-node-id="1HTEV4PKxJrcu4FoCEyRpZ"></span>存活 <b id="hud-p-count" data-page-node-id="Q6YCFu5GSqx4EhBz1zfXxF">0</b></span>
-      <span class="hud-item" data-page-node-id="c9dFlRei50evnXBOndk5tH"><span class="dot red" data-page-node-id="XDBmqR7CmZ13uYx2k6hv3J"></span>存活 <b id="hud-e-count" data-page-node-id="TGFugbDjlwoBFM9e7eEmJH">0</b></span>
-      <span class="hud-item" data-page-node-id="iLSIBrM5fZDyZmiyNUrBCs">比分 <b id="hud-p-score" style="color:#4fc3f7;" data-page-node-id="8jEpLhhGAGb3oH9iKbBpQP">0</b> : <b id="hud-e-score" style="color:#ff6a6a;" data-page-node-id="ftWwBCLac8aFvdBq7ODCAI">0</b></span>
-      <span class="hud-item lv-tag" id="hud-p-lv" data-page-node-id="o4eC6G62tKqfqFQ3CCtp1y">近战 Lv1</span>
-      <span class="hud-item lv-tag" id="hud-e-lv" style="color:#ffb0a0;border-color:rgba(255,106,106,.4);background:rgba(255,106,106,.14);" data-page-node-id="Di2J9vcDqCzTYQNTW4Rj1o">敌 近战 Lv1</span>
+    <div class="hud-box">
+      <span class="hud-item"><span class="dot blue"></span>存活 <b id="hud-p-count">0</b></span>
+      <span class="hud-item"><span class="dot red"></span>存活 <b id="hud-e-count">0</b></span>
+      <span class="hud-item">比分 <b id="hud-p-score" style="color:#4fc3f7;">0</b> : <b id="hud-e-score" style="color:#ff6a6a;">0</b></span>
+      <span class="hud-item lv-tag" id="hud-p-lv">近战 Lv1</span>
+      <span class="hud-item lv-tag" id="hud-e-lv" style="color:#ffb0a0;border-color:rgba(255,106,106,.4);background:rgba(255,106,106,.14);">敌 近战 Lv1</span>
     </div>
   </div>
-  <div id="arena-wrap" data-page-node-id="hQLXlnzXmBVyxLviLfMQub">
-    <canvas id="arena" width="1000" height="520" data-page-node-id="kLcDxznCHPWjnf3cE3Zw62"></canvas>
-    <div id="banner" data-page-node-id="6AjbrKxFCcmmt6rQSGdh1F"></div>
-    <div id="combo" data-page-node-id="owrODUX69Djkl8wCobGZx3"></div>
-    <div id="bigtext" data-page-node-id="ZRuGsACK5ZP9FtdE2RqK4B"></div>
-    <div class="kill-feed" id="kill-feed" data-page-node-id="MiWzEvwwVWrqhsxq7vtPAQ"></div>
-    <div class="ctl-bar" data-page-node-id="XC1s7PRVgU7zZbDz3baGlZ">
-      <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）" data-page-node-id="nKEdI29eBA0P3iP8KgSLVX"><span class="lbl" data-page-node-id="mxdB2WxfBGz5uDE4LHodpV">应援!</span></button>
-      <button class="ctl-btn" id="btn-speed" title="切换战斗速度" data-page-node-id="HJSLLC5impU1DvV5EpSWjW">速度 1×</button>
-      <button class="ctl-btn" id="btn-full" title="全屏观看" data-page-node-id="3QLYPvNeYvJp9U9XUUXswU">全屏</button>
+  <div id="arena-wrap">
+    <canvas id="arena" width="1000" height="520"></canvas>
+    <div id="banner"></div>
+    <div id="combo"></div>
+    <div id="bigtext"></div>
+    <div class="kill-feed" id="kill-feed"></div>
+    <div class="ctl-bar">
+      <button class="ctl-btn cheer" id="btn-cheer" title="全军应援（冷却12秒）"><span class="lbl">应援!</span></button>
+      <button class="ctl-btn" id="btn-speed" title="切换战斗速度">速度 1×</button>
+      <button class="ctl-btn" id="btn-full" title="全屏观看">全屏</button>
     </div>
-    <div class="wall-hud" id="wall-hud" style="display:none;" data-page-node-id="Szbv3WXQfwtd5SJczIkmKV">
-      <div class="wseg" data-page-node-id="v7jOXrbMfmpKZVQd2GQtN4"><span data-page-node-id="pGTu8Heb2phFCQFFcJ0kG7">上</span><span class="wbar" data-page-node-id="Tiv4uPtVtSXrOfFuvUxMEJ"><span class="wfill" id="wf0" style="width:100%" data-page-node-id="8LEBz1mF44jzkM77dppDcO"></span></span></div>
-      <div class="wseg" data-page-node-id="2Ii0gpgcHduCDNbIxoCNsJ"><span data-page-node-id="AYhPL4eOIUA4qvScfwauIU">中</span><span class="wbar" data-page-node-id="jH3Yo3xFH9fPlGfyWGsa1V"><span class="wfill" id="wf1" style="width:100%" data-page-node-id="gpXJ6Tevg2PrvguG4Rki1m"></span></span></div>
-      <div class="wseg" data-page-node-id="lpZgWZ34vEp0Rlv4Se08Xb"><span data-page-node-id="dJBSCG7dB1uRoQkOqmRbmq">下</span><span class="wbar" data-page-node-id="6inDT0YThAhhvpDrNExeSn"><span class="wfill" id="wf2" style="width:100%" data-page-node-id="2NOjxtgJYyAMT8iDd12m9L"></span></span></div>
-      <div class="wseg" data-page-node-id="ltJNj6CIWlkKS8AkbSIJQh"><span data-page-node-id="To8cLmyGjMdjV3mEGzCibf">城</span><span class="wbar" data-page-node-id="uLz2IPT4f2Z6HEXCFrIhRd"><span class="wfill" id="wf3" style="width:100%;background:linear-gradient(90deg,#ffd479,#e0873a);" data-page-node-id="blGKZ5Jq9I68dT4DtVyy7W"></span></span></div>
+    <div class="wall-hud" id="wall-hud" style="display:none;">
+      <div class="wseg"><span>上</span><span class="wbar"><span class="wfill" id="wf0" style="width:100%"></span></span></div>
+      <div class="wseg"><span>中</span><span class="wbar"><span class="wfill" id="wf1" style="width:100%"></span></span></div>
+      <div class="wseg"><span>下</span><span class="wbar"><span class="wfill" id="wf2" style="width:100%"></span></span></div>
+      <div class="wseg"><span>城</span><span class="wbar"><span class="wfill" id="wf3" style="width:100%;background:linear-gradient(90deg,#ffd479,#e0873a);"></span></span></div>
     </div>
-    <div id="cmd-bar" data-page-node-id="o0ouETXubkdz720wrDGI7f"></div>
-    <div id="cmd-hint" data-page-node-id="v3IoB5Ajc2h3tMmnd7X3VC">点击战场释放技能</div>
-    <div class="hint" data-page-node-id="N92B11F037BF1KEoWSCPu3">空格/双击=加速 · 点指令栏技能→点战场释放（落雷/治疗波）· 应援=增益 · 速度/全屏</div>
-    <div class="commentary" id="commentary" data-page-node-id="l9GjuFimeslGQlGo5Zsqgr"></div>
+    <div id="cmd-bar"></div>
+    <div id="cmd-hint">点击战场释放技能</div>
+    <div class="hint">空格/双击=加速 · 点指令栏技能→点战场释放（落雷/治疗波）· 应援=增益 · 速度/全屏</div>
+    <div class="commentary" id="commentary"></div>
 
     <!-- 底部常驻经营条：守城模式专用。买兵 / 科技 / 修墙 / 经济四条经营线全在这里，
          没有「打开商店」这一步——战斗中、喘息期，只要钱够随时可点。 -->
-    <div id="shopdock" data-page-node-id="n2elIaWsJRmaUU0EndD7OJ">
-      <div class="sd-top" data-page-node-id="PymPgBJ4Wh5t3w7iXlhqi3">
-        <div class="sd-res" data-page-node-id="OHNxJjuiRpTN56ElJBoAnp">
-          金库 <b id="sd-gold" data-page-node-id="NtYVdzrFpnAeXcDBOFJE8G">0</b> ｜ 税收 <b id="sd-tax" data-page-node-id="oAETnL90Ea1U8Yhd4LfmSF">0</b>/s ｜ 下波利息 <b id="sd-int" data-page-node-id="D23eO0TGnkpBwjonJkBv1Z">0</b>
+    <div id="shopdock">
+      <div class="sd-top">
+        <div class="sd-res">
+          金库 <b id="sd-gold">0</b> ｜ 税收 <b id="sd-tax">0</b>/s ｜ 下波利息 <b id="sd-int">0</b>
         </div>
-        <div class="shop-tabs" id="sd-tabs" data-page-node-id="WlW7bxg11Oxn3DMvsjSO1B">
-          <button class="shop-tab on" data-tab="unit" data-page-node-id="8AYitngPnCkDc0PTNmNAIT">买兵</button>
-          <button class="shop-tab" data-tab="tech" data-page-node-id="pMMPFQ2WnxSBSNI75Le4CD">科技</button>
-          <button class="shop-tab" data-tab="wall" data-page-node-id="64hTXpCcTnM0Sy2B4EcEKr">城墙</button>
-          <button class="shop-tab" data-tab="econ" data-page-node-id="dKEAtrsgNhlG8vYEXw3iaZ">经济</button>
+        <div class="shop-tabs" id="sd-tabs">
+          <button class="shop-tab on" data-tab="unit">买兵</button>
+          <button class="shop-tab" data-tab="tech">科技</button>
+          <button class="shop-tab" data-tab="wall">城墙</button>
+          <button class="shop-tab" data-tab="econ">经济</button>
         </div>
-        <div class="sd-act" data-page-node-id="ytMvyBd5MCjHS6vMB1a9UY">
-          <button class="ctl-btn" id="btn-stance" data-page-node-id="NBaIghInh90ECfsUZgeTKf">当前：驻守</button>
-          <span class="sd-timer" id="sd-timer" data-page-node-id="ebned7viaPTBg2wIrRManO">下一波 5s</span>
-          <button class="btn" id="btn-fight" style="margin-top:0;padding:6px 18px;font-size:13px;" data-page-node-id="3AAzDVpDkU9RGP7ZTwFGWg">提前出兵 +15</button>
-        </div>
-      </div>
-      <div class="shop-grid" id="shop-grid" data-page-node-id="S7wQwU3agWUwE1RiLmrjNc"></div>
-    </div>
-
-    <div class="overlay show" id="menu" data-page-node-id="YfCFX6H5LNNR9Dvr1uAZRI">
-      <div class="panel" data-page-node-id="rEAaGEoRcLxq6eBCcg5oX2">
-        <h2 data-page-node-id="4SCMRH5rSjj2C1i6Xo9arU">脑洞军团大乱斗</h2>
-        <div class="desc" data-page-node-id="9vrNrARf19SynNUCaMBnWA">
-          <b data-page-node-id="A0YCN8MAxZyrPspiNJbuHS">自动对战：</b>双方同时出兵、全自动开打，但你不是纯看戏——每轮能抽<b data-page-node-id="ppdgf9yxg58vKG3A4vkGca">战术卡</b>，战斗中点<b data-page-node-id="GRHza4ISqUaaaY60v8jBjo">应援</b>给全军加 Buff。<br data-page-node-id="XGT42LaMS4H9EvMU0uHo4Q">
-          <b data-page-node-id="1yEPUAf6erQj2N2laSV03k">兵力递增：</b>每轮 3→6→12→24→30，近战/远程/骑兵各占 1/3（战术卡可加人）。<br data-page-node-id="XClFxwhgitXw89ukVqEXyA">
-          <b data-page-node-id="uKWrMj1ndgLEQfwowxt77Z">总分制：</b>5 轮打完比累计击杀，不看单轮输赢，最后算总账。<br data-page-node-id="Xtg5kRcNaTvsnQarUg2MSb">
-          <b data-page-node-id="V4SxsYAXoMFG7GDuggA9KX">升级抉择：</b>每轮后能升级兵种线（共 4 次），部分卡还附带战术增益（攻速/血厚/暴躁/应援强化/以众凌寡/克制）。<br data-page-node-id="uAv8ByBXe6q3jTPPVW7dqi">
-          <b data-page-node-id="MA5OVW0YsjxmmsSrTiN5Ko">三系分支：</b>任意一条线从 <b data-page-node-id="WAFOUkNTzHjrVE4qE1m0rl">Lv2 升 Lv3</b> 时，会同时出现「普通 Lv3」和「★分支 Lv3」两张卡让你二选一：<br data-page-node-id="44Yn6wFEMhOToGnOaU7YAd">
-          <span style="padding-left:14px;" data-page-node-id="995mHDL2FNLSg7vCkY3muE">近战 → <b data-page-node-id="ABjA0G8cgVN46LJkBWjMBX">大盾步兵</b>（专克远程）、远程 → <b data-page-node-id="IXJMYUa1rGEY5mmknQpIL0">狙击手</b>（专克骑兵）、骑兵 → <b data-page-node-id="z9HVWFrIs2O2hv0HJFKbam">枪骑兵</b>（专克近战）。</span><br data-page-node-id="IYYZaM5fK0oIY4FVCrm0ZV">
-          <span style="padding-left:14px;" data-page-node-id="E83jm2K49rrsK7jKd2b4Wz">选定分支后沿该分支一路升到 Lv5，一路点同一条分支就能把它拉满。</span><br data-page-node-id="6qcCYt9J4Bv8wRMOgOMqXu">
-          <b data-page-node-id="bInso73FY67jTrJn6yONzp">概率大招：</b>出手时概率怒吼放大招（飞砖/激光/长枪/醉拳…），一击翻盘。<br data-page-node-id="qKcQCj520TH1y6Wcrq6FaE">
-          <b data-page-node-id="QFuDn9hZmn4EljZpdiE9Xk">克制：</b>近战克骑兵、骑兵克远程、远程克近战（+12% 伤害）。<br data-page-node-id="CB8GVprqQgBjhObU42DYNC">
-          <span style="padding-left:14px;" data-page-node-id="eIyV9HAL8ArZdm1xHzSNYH">分支把「本来克你的那个」反手变成你专克的（×2）：大盾＞狙击手＞枪骑兵＞大盾。</span><br data-page-node-id="G2IhOM2oJ0klBlaUiHeKB4">
-          <b data-page-node-id="c86ktE4CARlqpLB9A9jRgl">操作：</b>左上「战术指挥」选技能→点战场释放（落雷重创敌军 / 治疗波救友军，各有冷却）；空格/双击加速；右上「应援」临时增益；「速度」切 1×/2×/3×；「全屏」铺满。
-        </div>
-        <div class="mode-btns" data-page-node-id="rNzu59IN6GJMO9ejPIGxaF">
-          <button class="mode-btn" id="btn-mode-siege" data-page-node-id="gAS3bNtsxxvZkOnWEyK4lB">
-            <span class="m-tag" data-page-node-id="J3cPL7nEFrPOHI3GnybFx7">主模式 · 25-35 分钟</span>
-            <div class="m-name" data-page-node-id="pNQ7G5x8XNRwNx0Kq1KoW7">守城远征</div>
-            <div class="m-desc" data-page-node-id="gffhgrJRLbze6Vr8SOSAqf">守住三段城墙，抵挡 20 波敌军。<br data-page-node-id="CKue9dzA3DXPagyvOKiDyb">赚金币 → 买兵 / 升科技 / 修城墙 / 建经济，<br data-page-node-id="3D2HEl6slrZFG8b319wAjD">钱怎么花决定你能守到第几波。</div>
-          </button>
-          <button class="mode-btn alt" id="btn-mode-arena" data-page-node-id="WKjHLMv6KeRYSDFFFRpXBU">
-            <span class="m-tag" data-page-node-id="uFk5Oyv0R8HtJ0tvFVBn7Q">快速局 · 6-8 分钟</span>
-            <div class="m-name" data-page-node-id="9WUBgGSsLu7yBg0SMUvJKo">竞技场</div>
-            <div class="m-desc" data-page-node-id="WsFo9Q3klyqVqsDRAZvd55">经典 5 轮对称团战。<br data-page-node-id="rDZbBeB0vnbjyE2mAHOrFJ">每轮抽战术卡、每轮升级一条线，<br data-page-node-id="I8UDyngN7D5whWGxWdCRJs">Lv3 时二选一走分支，五轮比总击杀。</div>
-          </button>
-        </div>
-        <div class="diff-row" data-page-node-id="GO2WYqtEBPnzh2OBz1O2Ia">
-          <span class="diff-label" data-page-node-id="q7Z77CxcflUoO1WyHJEVv5">难度</span>
-          <button class="diff-btn" data-diff="0.8" data-page-node-id="BfjU46WQuu5DyVG9qoKiF3">休闲　<span data-page-node-id="mu1lnY9DJU8NQQW74VIzvm">敌军血量预算 ×0.8，练手熟悉经济节奏</span></button>
-          <button class="diff-btn on" data-diff="1" data-page-node-id="QS6yN0AmjBdhd1N34fRdJ9">标准　<span data-page-node-id="BojAP0ZL5cgxvWL0XAQM8N">设计基准，正常发挥可守到 12-18 波</span></button>
-          <button class="diff-btn" data-diff="1.35" data-page-node-id="ixMtLnPTdufcTdrSYxaWb7">硬核　<span data-page-node-id="CDqiTj1CANRvFNxEsDvZJF">预算 ×1.35，逼你精算每一枚金币</span></button>
+        <div class="sd-act">
+          <button class="ctl-btn" id="btn-stance">当前：驻守</button>
+          <span class="sd-timer" id="sd-timer">下一波 5s</span>
+          <button class="btn" id="btn-fight" style="margin-top:0;padding:6px 18px;font-size:13px;">提前出兵 +15</button>
         </div>
       </div>
+      <div class="shop-grid" id="shop-grid"></div>
     </div>
 
-    <div class="overlay" id="upgrade" data-page-node-id="E5H6o6SQdF1Dqw1IZgYjoY">
-      <div class="panel" data-page-node-id="uFNQBnTBSxCnwnKg1cOZiy">
-        <h2 id="up-title" data-page-node-id="FErIIR383ZFk2d4wVB3eVD">第 X 轮结束！战术抉择</h2>
-        <div class="desc" style="text-align:center;font-size:12px;color:#b9a7d6;" data-page-node-id="VqG27bdhLR2a8YbBykuqfo">
+    <div class="overlay show" id="menu">
+      <div class="panel">
+        <h2>脑洞军团大乱斗</h2>
+        <div class="desc">
+          <b>自动对战：</b>双方同时出兵、全自动开打，但你不是纯看戏——每轮能抽<b>战术卡</b>，战斗中点<b>应援</b>给全军加 Buff。<br>
+          <b>兵力递增：</b>每轮 3→6→12→24→30，近战/远程/骑兵各占 1/3（战术卡可加人）。<br>
+          <b>总分制：</b>5 轮打完比累计击杀，不看单轮输赢，最后算总账。<br>
+          <b>升级抉择：</b>每轮后能升级兵种线（共 4 次），部分卡还附带战术增益（攻速/血厚/暴躁/应援强化/以众凌寡/克制）。<br>
+          <b>三系分支：</b>任意一条线从 <b>Lv2 升 Lv3</b> 时，会同时出现「普通 Lv3」和「★分支 Lv3」两张卡让你二选一：<br>
+          <span style="padding-left:14px;">近战 → <b>大盾步兵</b>（专克远程）、远程 → <b>狙击手</b>（专克骑兵）、骑兵 → <b>枪骑兵</b>（专克近战）。</span><br>
+          <span style="padding-left:14px;">选定分支后沿该分支一路升到 Lv5，一路点同一条分支就能把它拉满。</span><br>
+          <b>概率大招：</b>出手时概率怒吼放大招（飞砖/激光/长枪/醉拳…），一击翻盘。<br>
+          <b>克制：</b>近战克骑兵、骑兵克远程、远程克近战（+12% 伤害）。<br>
+          <span style="padding-left:14px;">分支把「本来克你的那个」反手变成你专克的（×2）：大盾＞狙击手＞枪骑兵＞大盾。</span><br>
+          <b>操作：</b>左上「战术指挥」选技能→点战场释放（落雷重创敌军 / 治疗波救友军，各有冷却）；空格/双击加速；右上「应援」临时增益；「速度」切 1×/2×/3×；「全屏」铺满。
+        </div>
+        <div class="mode-btns">
+          <button class="mode-btn" id="btn-mode-siege">
+            <span class="m-tag">主模式 · 25-35 分钟</span>
+            <div class="m-name">守城远征</div>
+            <div class="m-desc">守住三段城墙，抵挡 20 波敌军。<br>赚金币 → 买兵 / 升科技 / 修城墙 / 建经济，<br>钱怎么花决定你能守到第几波。</div>
+          </button>
+          <button class="mode-btn alt" id="btn-mode-arena">
+            <span class="m-tag">快速局 · 6-8 分钟</span>
+            <div class="m-name">竞技场</div>
+            <div class="m-desc">经典 5 轮对称团战。<br>每轮抽战术卡、每轮升级一条线，<br>Lv3 时二选一走分支，五轮比总击杀。</div>
+          </button>
+        </div>
+        <div class="diff-row">
+          <span class="diff-label">难度</span>
+          <button class="diff-btn" data-diff="0.8">休闲　<span>敌军血量预算 ×0.8，练手熟悉经济节奏</span></button>
+          <button class="diff-btn on" data-diff="1">标准　<span>设计基准，正常发挥可守到 12-18 波</span></button>
+          <button class="diff-btn" data-diff="1.35">硬核　<span>预算 ×1.35，逼你精算每一枚金币</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="upgrade">
+      <div class="panel">
+        <h2 id="up-title">第 X 轮结束！战术抉择</h2>
+        <div class="desc" style="text-align:center;font-size:12px;color:#b9a7d6;">
           每次升级提升整条线属性（生命 +40% / 攻击 +50%）并解锁新兵种与新大招；战术卡给全军永久增益。AI 也在同步变强。
         </div>
-        <div class="cycle" id="cycle-bar" data-page-node-id="oqkadruf58ZzeFt4SpnIml"></div>
-        <div class="tree" id="upgrade-grid" data-page-node-id="nNPVZ9VtlW0gUKqsiVm1dc"></div>
+        <div class="cycle" id="cycle-bar"></div>
+        <div class="tree" id="upgrade-grid"></div>
       </div>
     </div>
 
-    <div class="overlay" id="end" data-page-node-id="CRaERoSRAHHOqjmPywhJDx">
-      <div class="panel" data-page-node-id="soA81FigrBzRqKy191KyNF">
-        <h2 id="end-title" data-page-node-id="8Z5eNEdOJNDWQ4BDB2ExbN">结果</h2>
-        <div class="desc" id="end-desc" style="text-align:center;" data-page-node-id="2IkcKTLWe8Q9XeywTZBOnD"></div>
-        <button class="btn" id="btn-again" data-page-node-id="DhbDKtsqtrFcQVXFAGAfhl">再来一局</button>
+    <div class="overlay" id="end">
+      <div class="panel">
+        <h2 id="end-title">结果</h2>
+        <div class="desc" id="end-desc" style="text-align:center;"></div>
+        <button class="btn" id="btn-again">再来一局</button>
       </div>
     </div>
   </div>
 </div>
-<script>window.__EMBEDDED={};</script>
 <script>/* 拼装产物:本文件由 build.js 把 src/*.js 按依赖顺序拼合而成。
  * 任何修改请编辑 src/ 下的源文件,不要直接改这个 HTML,build 会覆盖。
  * 拼装顺序:config.js → state.js → utils.js → combat.js → systems.js → update.js → ui.js → render.js → commentary.js → audio.js → loop.js
@@ -798,6 +796,71 @@ const COMMANDS = [
 // 战术指挥的“攻击者”对象：落雷/治疗波等指令以指挥官身份结算，必须带真实 type/branch/level，
 // 否则阵亡单位回写 lastAttacker 后再死亡会令 pushFeed→lineName 解到 undefined 而抛异常卡死主循环。
 const COMMANDER = { side: "player", type: "melee", branch: null, level: 1, isCommander: true };
+
+/* =========================================================================
+   功能开关 FLAGS（每个新系统一个，关掉后游戏必须还能正常跑）
+   -------------------------------------------------------------------------
+   铁律：任何一个 FLAG 置 false，游戏不得报错、不得缺功能崩溃。
+   这是「出问题能单独回滚」的唯一保障（v4 §12.2 / v5 A3）。
+   ========================================================================= */
+const FLAGS = {
+  hero:     true,   // v5 §5 英雄系统上场（关掉 = 不出英雄，退回纯军团战）
+  heroUlt:  true,   // v5 §5.4 英雄大招（关掉 = 英雄只有光环，无士气无大招）
+  dualAxis: false,  // v5 §2.3 双轴克制（未实现，预留）
+  status:   false,  // v4 §7-M2 状态系统（未实现，预留）
+};
+
+/* =========================================================================
+   英雄系统（v5 §5）
+   -------------------------------------------------------------------------
+   三条设计纪律，改这里之前先读：
+
+   ① 对称：玩家与敌方英雄走同一套公式（同一张 HEROES 表、同一套士气规则）。
+      玩家的强度只能来自「局内花金币升级」，不是「玩家有英雄」。
+      对称的是能力框架，不是获取路径 —— 这是 P4「对称即公平」的落地。
+
+   ② 与指令系统分轨：英雄大招走独立的「士气」资源，不消耗 CP。
+      若共享 CP，玩家最优解永远是攒给大招，6 条指令全部变摆设
+      ——一个系统吃掉另一个系统是设计事故。
+
+   ③ 英雄不死亡，只退场（retreatTime 后以 50% HP 返场）：
+      会死 → 玩家永远不敢出击，与守城「驻守/出击」的张力直接冲突，
+      且一次失误就失去英雄会产生挫败感。退场是「有时间代价但不毁灭」的惩罚。
+   ========================================================================= */
+const HERO_CFG = {
+  moraleMax: 100,
+  moraleRegen: 1.6,     // 每秒自然回复。100/1.6 ≈ 62s 纯自然满；实战有击杀与挨打，约 45-55s 一发
+  moralePerKill: 3,     // 己方任意单位击杀 → 该侧英雄 +3（不是只有英雄自己击杀，否则英雄抢人头成最优解）
+  moralePerHit: 2,      // 英雄自身每次受击 +2（挨打攒怒气）。按「次」不按「量」，避免被高伤单位刷爆
+  retreatTime: 30,      // 退场时长（秒）。v5 定 30s；一轮内可观察，若节奏拖沓改 20s
+  retreatHpPct: 0.5,    // 返场 HP 百分比
+  hpMul: 4,             // 相对同等级近战。能扛 3-4 个单位集火约 8 秒，够玩家反应
+  atkMul: 2.2,          // 输出约等于 2 个兵。不是「一打十」，避免英雄抢戏
+  speed: 200,           // 介于近战 160 与骑兵 300 之间：能跟上阵型，追不上骑兵
+  radius: 22,           // 比普通单位（13-17）大一圈，视觉上"这是个大人物"
+  auraHardCap: 0.6,     // 光环减伤硬上限：防止光环 + 大招 + 其他增益叠加破表
+};
+
+const HEROES = {
+  guardian: {
+    key: "guardian", name: "铁壁将军", short: "盾",
+    atkType: "blunt", armorType: "hero",
+    color: "#c9b037",
+    desc: "防守核心：范围友军减伤，大招免控加固",
+    // 光环：常驻、不占操作带宽。12% 减伤 ≈ 有效 HP +13.6%，
+    // 略低于战术卡「铁血纪律」的 +15% HP —— 因为光环是范围性的，覆盖面更广，单体价值要打折。
+    aura: { radius: 180, reduce: 0.12 },
+    ult: {
+      name: "不动如山", cd: 50, dur: 5,
+      desc: "5 秒内：范围内友军免疫击退、受伤再减 30%；守城模式额外修复城墙 15%",
+      immuneKnock: true,     // 免击退：在 knockUnit 里拦截
+      extraReduce: 0.30,     // 叠加在光环上，合计 12% + 30% = 42%（低于 auraHardCap 0.6）
+      wallHealPct: 0.15,     // 守城模式专用
+    },
+  },
+};
+const HERO_KEYS = Object.keys(HEROES);
+
 function unproject(sx, sy) {
   // 屏幕坐标 → 世界坐标（反投影）；点击地平线以上映射为最远排，以下为最近排
   const t = Math.pow(clamp01((sy - PROJ.horizon) / (PROJ.floor - PROJ.horizon)), 1 / 0.62);
@@ -1186,6 +1249,13 @@ function resetGame() {
     // 应援：active 持续 cheerDur 秒，cd 冷却
     cheer: { active: false, t: 0, cd: 0 },
     cmd: { armed: null, cd: { strike: 0, heal: 0 } },
+    // 英雄状态（双方各一份，结构完全相同 → 对称）。
+    // morale 士气（0-100，满可放大招）；ultT 大招剩余生效时长；ultCd 大招冷却；
+    // retreatT 退场倒计时（>0 表示在场外）；lv 英雄等级（守城模式用金币提升）
+    hero: {
+      p: { key: "guardian", morale: 0, ultT: 0, ultCd: 0, retreatT: 0, lv: 1 },
+      e: { key: "guardian", morale: 0, ultT: 0, ultCd: 0, retreatT: 0, lv: 1 },
+    },
     hitStop: 0,
     bigText: null,
 
@@ -1256,6 +1326,46 @@ function makeUnit(side, type, level, x, y, branch) {
     deathT: 0, dustT: Math.random() * 0.25,
   };
 }
+/* ================= 英雄 ================= */
+/* 取某阵营的英雄状态。所有英雄相关读写都必须经这里，禁止直接写 G.hero.p / G.hero.e，
+   否则敌我逻辑会分叉 —— 这是「战术卡只归玩家」那个 bug 的同类错误（见 v5 §0）。 */
+function heroState(side) {
+  if (!G || !G.hero) return null;
+  return G.hero[side === "player" ? "p" : "e"] || null;
+}
+function makeHero(side, heroKey, level, x, y) {
+  const def = HEROES[heroKey] || HEROES[HERO_KEYS[0]];
+  const base = UNIT_DEFS.melee;                       // 英雄骨架沿用近战（复用 kairo* 绘制，零新美术骨架）
+  const lv = Math.max(1, Math.min(5, level | 0));
+  const hp  = Math.round(base.hp  * Math.pow(CONFIG.lvHpMul,  lv - 1) * HERO_CFG.hpMul);
+  const atk = Math.round(base.atk * Math.pow(CONFIG.lvAtkMul, lv - 1) * HERO_CFG.atkMul);
+  return {
+    id: nextId++, side, type: "melee", level: lv, branch: null,
+    isHero: true, heroKey: def.key,
+    x, y, vx: 0, vy: 0, angle: 0, spin: 0,
+    hp, maxHp: hp, atk,
+    range: base.range, speed: HERO_CFG.speed, atkCdMs: base.atkCdMs,
+    radius: HERO_CFG.radius,
+    facing: side === "player" ? 1 : -1,
+    state: "move", stateT: 0, attackT: 0, target: null,
+    skillCd: 0, skill: SKILLS.melee[lv - 1],
+    buffT: 0, buffAtkMul: 1, buffSpdMul: 1,
+    charging: false, chargeDir: 0, chargeT: 0, chargeHit: null,
+    flash: 0, swing: 0, walkPhase: Math.random() * 6.28, dead: false,
+    deathT: 0, dustT: Math.random() * 0.25,
+    homeX: null, homeY: null,   // 守城驻守阵位（竞技场不用，但 update 会读，必须存在）
+  };
+}
+function spawnHero(side) {
+  const st = heroState(side);
+  if (!st) return;
+  // 英雄等级 = 该侧「最高兵种等级」：让英雄强度跟随场上战力，不与军团脱节。
+  // 守城模式下改用 st.lv（由金币养成驱动），竞技场则跟随兵种等级保持对称。
+  const lvMap = side === "player" ? G.playerLv : G.enemyLv;
+  const lv = G.mode === "siege" ? st.lv : Math.max(lvMap.melee, lvMap.ranged, lvMap.cavalry);
+  const x = side === "player" ? 45 : CONFIG.worldW - 45;   // 最后排：玩家最左，敌人最右
+  G.units.push(makeHero(side, st.key, lv, x, 240));
+}
 function spawnArmy(side) {
   const base = ROUND_SIZES[G.round - 1];
   const per = Math.floor(base / 3);
@@ -1279,6 +1389,9 @@ function spawnArmy(side) {
       G.units.push(makeUnit(side, baseType, lv[baseType], x, y, br[baseType]));
     }
   });
+  // 英雄上场：本轮只在竞技场模式出。
+  // 守城模式涉及 stance（驻守/出击）与城墙站位，需要单独处理，不在这里塞。
+  if (FLAGS.hero && G.mode !== "siege") spawnHero(side);
 }
 
 
@@ -1290,6 +1403,7 @@ function spawnArmy(side) {
  * ============================================================================= */
 
 /* ================= 工具 ================= */
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function compact(arr, keep) { let w = 0; for (let i = 0; i < arr.length; i++) { if (keep(arr[i])) arr[w++] = arr[i]; } arr.length = w; }
 function counterMul(atk, def) {
   // 基础克制 +35%（近战→骑兵→远程→近战）。
@@ -1305,8 +1419,11 @@ function counterMul(atk, def) {
     const vs = ab.trait.atkMulVs[def.type];
     if (vs) m = Math.max(m, vs);
   }
-  if (m <= 1 || atk.side !== "player") return m;   // 克制加成只归我方
-  return m * (1 + (G.mods.counterBonus || 0));
+  if (m <= 1) return m;
+  // 克制加成只归该侧：玩家 → G.mods.counterBonus；AI → G.enemyMods.counterBonus
+  // (对称基线，参见 state.js modsOf 设计纪律 — 早期写死 player 是 v5 §0 的 bug)
+  const bonus = (modsOf(atk.side).counterBonus) || 0;
+  return m * (1 + bonus);
 }
 function findNearest(u) {
   let best = null, bd = 1e9;
@@ -1346,6 +1463,8 @@ function cheerSpdMul(u) {
 }
 function knockUnit(u, kx, ky) {
   if (u.dead || u.state === "dead") return;
+  // 英雄大招「不动如山」期间免击退：在大招时间窗内，任何击退尝试都直接被吃掉
+  if (FLAGS.hero && FLAGS.heroUlt && u.isHero && heroUltImmuneKnock(u)) return;
   // 击退改为贴地水平位移 + 短暂踉跄；只做一个落地「小跳」的演出位移，绝不真正升空（真实战场）。
   u.vx = kx; u.vy = 0;
   u.state = "knocked"; u.stateT = 0.5;
@@ -1369,11 +1488,21 @@ function damageUnit(u, dmg, attacker, knock, knockY) {
     const tm = db.trait.takeMoreVs;
     if (tm && tm[attacker.type]) dmg *= tm[attacker.type];
   }
+  // 英雄光环减伤：英雄在场的同阵营友军吃到常驻/大招减伤（硬上限 0.6 → 至少承受 40% 伤害）
+  if (FLAGS.hero) dmg *= heroAuraReduce(u);
   u.hp -= dmg; u.flash = 0.12;
   u.lastAttacker = attacker;
+  // 英雄受击 + moralePerHit 怒气：按「次」不按伤害量，避免被高伤单位一次刷爆
+  if (FLAGS.hero && FLAGS.heroUlt && u.isHero) {
+    const hs = heroState(u.side); if (hs) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moralePerHit);
+  }
   if (knock > 0) knockUnit(u, u.x >= attacker.x ? knock : -knock, knockY || 180);
   if (u.hp <= 0) {
     u.hp = 0;
+    // 英雄不走死亡结算，一律退场（v5 §5 纪律③「不死亡，只退场」）。
+    // 原逻辑下「最后一击带不带击退」决定英雄是退场（knocked→dying）还是真死（finishKill）
+    // ——系统的存在方式不该由攻击类型决定。
+    if (FLAGS.hero && u.isHero && u.state !== "retreat") { retreatHero(u); return; }
     if (u.state !== "knocked") finishKill(u, attacker);
     else u.dying = true;
   }
@@ -1382,6 +1511,10 @@ function finishKill(u, attacker) {
   u.dying = true; u.dead = true; u.state = "dead"; u.stateT = 1.4;
   if (attacker.side === "player") { G.pKills++; G.combo.p++; G.combo.t = CONFIG.comboWindow; }
   else G.eKills++;
+  // 英雄士气（己方任意单位击杀 → 该侧英雄 + moralePerKill，避免英雄抢人头成最优解）
+  if (FLAGS.hero && FLAGS.heroUlt && attacker && attacker.side && !u.isHero) {
+    const hs = heroState(attacker.side); if (hs) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moralePerKill);
+  }
   // 守城模式：击杀掉金（战斗即经济，这是「出击」流派的主要收入）
   if (G.mode === "siege" && u.side === "enemy") addGold(killReward(u), u.x, u.y);
   if (G.mode === "siege" && u.side === "player") G.waveLoss++;
@@ -1411,6 +1544,110 @@ function pushFeed(victim, killer) {
     (killer && killer.side === "player" ? "我方" : "敌方") + "「" + kname + "」击杀";
   feed.appendChild(line);
   while (feed.children.length > 5) feed.removeChild(feed.firstChild);
+}
+
+/* ================= 英雄辅助（v5 §5） ================= */
+/* 英雄实体（含退场中的）。退场英雄仍在 G.units 里（dead=false, state="retreat"），
+   只是不该参与战斗结算 —— 所以查找分成两层：heroEntity 找实体，heroOf 找"能打的"。
+   缓存：heroAuraReduce 每次伤害结算都要问一次英雄是谁，逐帧缓存避免 O(n²)
+   （峰值 80 单位 × 每秒上百次伤害）。缓存只活一帧，死亡/退场最迟下一帧生效。 */
+let _heroCacheT = -1;
+const _heroCache = { player: null, enemy: null };
+function heroEntity(side) {
+  if (!FLAGS.hero) return null;
+  if (G.t !== _heroCacheT) {
+    _heroCacheT = G.t;
+    _heroCache.player = null; _heroCache.enemy = null;
+    for (const u of G.units) {
+      if (!u.isHero || u.dead || u.state === "dead") continue;
+      if (!_heroCache[u.side]) _heroCache[u.side] = u;
+    }
+  }
+  return _heroCache[side] || null;
+}
+/* 取某侧「在场可战斗」的英雄。退场中（state === "retreat"）返回 null，
+   光环 / 免击退 / AI 放大招随之全部失效 —— 状态判断收敛在这一处，
+   不在每个调用点重复写，避免再次出现"注释说过滤了、代码没过滤"。 */
+function heroOf(side) {
+  const u = heroEntity(side);
+  return u && u.state !== "retreat" ? u : null;
+}
+/* 该单位是否正站在己方英雄光环里：常驻 + 大招叠加，硬上限由 auraHardCap 控制。
+   返回「乘子」——damageUnit 直接乘到最终伤害上（< 1 表示减伤）。
+   注意：英雄自身也在光环里（光环半径包住自身），所以也吃自己的减伤。
+   这是有意的：英雄免疫群体小伤、但吃单体大伤 — 避免被人海淹没。 */
+function heroAuraReduce(unit) {
+  const hero = heroOf(unit.side);
+  if (!hero) return 1;
+  const def = HEROES[hero.heroKey];
+  if (!def) return 1;
+  const dist = Math.hypot(unit.x - hero.x, unit.y - hero.y);
+  if (dist > def.aura.radius) return 1;
+  let reduce = def.aura.reduce;
+  // 大招期间额外减伤：把「基础 + 额外」叠加后再钳制
+  const hs = heroState(hero.side);
+  if (FLAGS.heroUlt && hs && hs.ultT > 0 && def.ult.extraReduce) {
+    reduce = Math.min(1, reduce + def.ult.extraReduce);
+  }
+  // 减伤硬上限：防止与其他增益叠加破表（auraHardCap = 0.6 → 最多减 60%）
+  return clamp(1 - reduce, 1 - HERO_CFG.auraHardCap, 1);
+}
+/* 大招免击退判定：在 ultT 时间窗内，击退一律被吃掉（不掉血、不出声、不重置状态）。 */
+function heroUltImmuneKnock(unit) {
+  if (!unit.isHero) return false;
+  const hs = heroState(unit.side);
+  return !!(hs && hs.ultT > 0);
+}
+/* 触发英雄大招（手动：玩家按 Q；自动：AI morale 满自动放）。
+   共享同一入口以确保：cd/dur/durAudio/演出 全部一致。
+   — 守城模式：额外回血城墙（wallHealPct × 每段当前损失比，反向回写到 segs[i]）。
+   — 竞技场：仅吃光环 + 免击退，无城墙可修。 */
+function castHeroUlt(side) {
+  if (!FLAGS.hero || !FLAGS.heroUlt) return false;
+  const hs = heroState(side); if (!hs) return false;
+  const hero = heroOf(side); if (!hero) return false;
+  if (hs.ultCd > 0 || hs.ultT > 0 || hs.morale < HERO_CFG.moraleMax) return false;
+  const def = HEROES[hs.key]; if (!def || !def.ult) return false;
+  hs.ultCd = def.ult.cd;
+  hs.ultT  = def.ult.dur;
+  // 不扣 morale：放大招是一锤子「点燃」动作；之后 morale 重新自然回，这是有意的
+  // ——憋一发 5 秒大招后，再等 cd 跟 100 士气，循环节奏跟战斗节奏对齐。
+  addEffect("ring", hero.x, hero.y, { r: def.aura.radius, color: "#c9b037", glow: "#fff3c1" });
+  spawnParticles(hero.x, hero.y, { count: 22, color: "#ffd479", speed: 220, life: 1.0, grav: -60, size: 5 });
+  shake(0.5); sfx("skill");
+  pushBig(side === "player" ? `${def.name} 发动 · ${def.ult.name}` : `敌方 · ${def.name} · ${def.ult.name}`);
+  // 守城模式：城墙每段回血 wallHealPct
+  if (G.mode === "siege" && def.ult.wallHealPct) {
+    const max = wallSegMaxHp();
+    for (let i = 0; i < G.wall.segs.length; i++) {
+      const cap = max - G.wall.segs[i];
+      G.wall.segs[i] = Math.min(max, G.wall.segs[i] + cap * def.ult.wallHealPct);
+    }
+    shake(0.6);
+  }
+  return true;
+}
+/* 英雄在战场外的退场倒计时（被击退不退场 — knockUnit 不杀英雄；只有 HP=0 触发）。
+   退场后 30 秒 + 50% HP 返场。原 makeHero / makeUnit 都设置了 homeX/homeY 字段，
+   这里返场时把 homeX 设回以便守城驻守阵位（竞技场不需要）。 */
+function retreatHero(hero) {
+  if (hero.state === "retreat" || hero.state === "dead") return;
+  hero.state = "retreat";
+  hero.stateT = HERO_CFG.retreatTime;
+  hero.hp = Math.max(1, Math.round(hero.maxHp * HERO_CFG.retreatHpPct));
+  // 必须清 dying：damageUnit 首行守卫是 `if (u.dead || u.dying) return`，
+  // 而英雄 HP 归零时若处于 knocked 状态只置 dying=true 不走 finishKill。
+  // 不清 → 英雄返场后永久免疫一切伤害 → 双方英雄残局互锁、战斗打不完。
+  hero.dying = false;
+  hero.target = null;
+  hero.x = hero.side === "player" ? -60 : CONFIG.worldW + 60;
+  hero.y = 240;
+  hero.vx = 0; hero.vy = 0;
+  // 退场也清掉 heroState.retreatT，让返场逻辑跑自己的倒计时
+  const hs = heroState(hero.side);
+  if (hs) hs.retreatT = HERO_CFG.retreatTime;
+  addEffect("ring", hero.x, hero.y, { r: 32, color: "#c9b037", glow: "#fff3c1" });
+  pushFeed(hero, { side: hero.side === "player" ? "enemy" : "player", type: "melee", branch: null, level: 1, isCommander: true });
 }
 
 /* ================= 粒子（对象池 + 原地压缩，避免每帧分配） ================= */
@@ -1957,20 +2194,6 @@ function siegeShouldHitWall(u, target) {
  * ============================================================================= */
 
 /* ================= 更新 ================= */
-/* 走位修复（2026-09-04）：世界空间内沿目标方向做归一化匀速步进，x/y 同速，
-   纵深观感交给 applyWorld 的透视投影。替代原来的 Math.sign 轴对齐 8 方向步进 +
-   y 方向 0.6 硬减速——那套写法让单位在屏幕上「朝向偏掉 / 走位呈楼梯状 / 远近速度错位」，
-   正是用户反馈的「路径也有问题」。只改移动几何，不动战斗/数值；soft-repulsion 与击退不受影响。 */
-function stepToward(u, mx, my, dt) {
-  const dx = mx - u.x, dy = my - u.y;
-  const d = Math.hypot(dx, dy);
-  if (d < 0.001) return;
-  const step = u.speed * dt;
-  if (d <= step) { u.x = mx; u.y = my; return; }
-  u.x += (dx / d) * step;
-  u.y += (dy / d) * step;
-}
-
 function update(dt) {
   if (G.phase !== "battle") return;   // 竞技场等非守城模式：非战斗相位不推进；守城模式相位恒为 battle（实时，不暂停）
   const ms = dt * 1000;
@@ -2006,6 +2229,9 @@ function update(dt) {
   if (G.cheer.active) { G.cheer.t -= dt; if (G.cheer.t <= 0) G.cheer.active = false; }
   if (G.cheer.cd > 0) G.cheer.cd -= ms;
 
+  /* 英雄状态：士气自然回复 + 大招倒计时 + 退场倒计时 + AI 自动放/玩家输入由 loop.js 处理 */
+  if (FLAGS.hero) updateHero(dt);
+
   /* 解说弹幕 */
   G.cmtT -= dt;
   if (G.cmtT <= 0) { pushCommentary(); G.cmtT = 2.6 + Math.random() * 2.6; }
@@ -2031,6 +2257,10 @@ function update(dt) {
       u.deathT += dt;
       continue;
     }
+    // 英雄退场中：已离场（x 在战场外），不参与任何战斗 AI。
+    // 必须显式跳过 —— 英雄永不 dead（v5 §5 纪律③），若跟着下面的通用分支走，
+    // state 会被寻敌逻辑覆写成 "move"/"attack"，退场状态形同虚设、返场倒计时也永远走不完。
+    if (u.isHero && u.state === "retreat") continue;
     u.flash -= dt; u.swing -= dt;
     if (u.buffT > 0) { u.buffT -= dt; if (u.buffT <= 0) { u.buffAtkMul = 1; u.buffSpdMul = 1; } }
     if (u.skillCd > 0) u.skillCd -= ms;
@@ -2071,7 +2301,8 @@ function update(dt) {
         }
       } else {
         u.state = "move";
-        stepToward(u, tx, ty, dt);
+        u.x += Math.sign(tx - u.x) * u.speed * dt;
+        u.y += Math.sign(ty - u.y) * u.speed * 0.6 * dt;
         u.walkPhase += dt * 10;
       }
       // Boss 每 6 秒放一次大招（用自身技能表，零新增演出代码）
@@ -2133,9 +2364,10 @@ function update(dt) {
           mx = u.homeX; my = u.homeY;
         }
       }
-      const reach = Math.hypot(mx - u.x, my - u.y);
-      if (reach > 2) {
-        stepToward(u, mx, my, dt);
+      const ddx = Math.abs(mx - u.x), ddy = Math.abs(my - u.y);
+      if (ddx > 3 || ddy > 3) {
+        u.x += Math.sign(mx - u.x) * u.speed * dt;
+        u.y += Math.sign(my - u.y) * u.speed * 0.6 * dt;
         u.walkPhase += dt * 10;
         u.dustT += dt;
         if (u.dustT > 0.3) { u.dustT = 0; addEffect("dust", u.x - u.facing * 10, u.y + u.radius * 0.9, {}); }
@@ -2177,7 +2409,16 @@ function update(dt) {
 
   /* 胜负检测（单次遍历计数，避免每帧多次 filter 分配） */
   let pa = 0, ea = 0;
-  for (const u of G.units) { if (u.dead || u.hp <= 0) continue; if (u.side === "player") pa++; else ea++; }
+  for (const u of G.units) {
+    if (u.dead || u.hp <= 0) continue;
+    // 英雄不参与「全灭」判定 —— 这是 v5 §5 纪律③（英雄不死亡，只退场）的必然后果。
+    // 英雄永远存在于 G.units（退场只是 state="retreat"，dead 仍为 false），
+    // 若计入存活数，双方各有一个永生英雄 → `pa===0 || ea===0` 永不成立 → 战斗永远结束不了。
+    // 设计立场：胜负由军团决定，英雄是加成不是胜负条件（纪律①）。
+    // 否则「双方英雄残局互磨」会把每一轮都拖满 75s 时限。
+    if (FLAGS.hero && u.isHero) continue;
+    if (u.side === "player") pa++; else ea++;
+  }
   if (G.mode === "siege") {
     // 守城模式：全灭不等于失败（可以再买兵），只有主城被打爆才算输
     if (ea === 0 && G.spawnQueue.length === 0) endWave(true);
@@ -2354,6 +2595,53 @@ function aiDrawPerk() {
   const p = pool[Math.floor(Math.random() * pool.length)];
   p.apply(G.enemyMods);
   G.aiPerk = p.name;
+}
+
+/* ================= 英雄驱动（v5 §5） ================= */
+/* 每帧推进：morale 自然回 / 大招生效倒计时 / 大招 cd / 退场返场倒计时 /
+   AI 自检「满气就放」防憋气。
+   玩家手动放大招由 loop.js 监听键位调 castHeroUlt() —— 不在这里轮询键盘。 */
+function updateHero(dt) {
+  for (const side of ["player", "enemy"]) {
+    const hs = heroState(side); if (!hs) continue;
+    if (hs.ultT > 0) hs.ultT = Math.max(0, hs.ultT - dt);
+    if (hs.ultCd > 0) hs.ultCd = Math.max(0, hs.ultCd - dt);
+
+    // heroEntity 找实体（含退场中的），heroOf 只认"能打的"——退场判断收敛在 utils 里
+    const ent = heroEntity(side);
+
+    // ① 退场中：只走返场倒计时。不回士气、不放招、不参与任何战斗结算。
+    //    原实现把 `continue` 写在循环体最后一行（根本没跳过任何东西），
+    //    导致退场期间 AI 照常放大招 —— 特效播在 x=-60 的场外，玩家看不见但资源已消耗。
+    if (ent && ent.state === "retreat") {
+      if (hs.retreatT > 0) {
+        hs.retreatT = Math.max(0, hs.retreatT - dt);
+        if (hs.retreatT === 0) {
+          ent.x = side === "player" ? 45 : CONFIG.worldW - 45;
+          ent.y = 240;
+          ent.hp = Math.max(1, Math.round(ent.maxHp * HERO_CFG.retreatHpPct));
+          ent.dying = false;                    // 与 retreatHero 里的清理互为冗余，别只留一处
+          ent.state = "move"; ent.stateT = 0;
+          addEffect("ring", ent.x, ent.y, { r: 60, color: "#c9b037", glow: "#fff3c1" });
+        }
+      }
+      continue;
+    }
+
+    // ② 场上没有英雄实体（本轮还没生成 / 已被清理）→ 只推进退场倒计时
+    if (!ent) {
+      if (hs.retreatT > 0) hs.retreatT = Math.max(0, hs.retreatT - dt);
+      continue;
+    }
+
+    // ③ 在场：士气自然回复 + AI 满气自动放大招
+    if (hs.ultT === 0) hs.morale = Math.min(HERO_CFG.moraleMax, hs.morale + HERO_CFG.moraleRegen * dt);
+    if (side === "enemy" && FLAGS.heroUlt && hs.ultT === 0 && hs.ultCd === 0 && hs.morale >= HERO_CFG.moraleMax) {
+      castHeroUlt("enemy");
+    }
+    // 兜底：非 damageUnit 路径（AOE / 指令）导致 HP 归零时也走退场，不要真死
+    if (ent.hp <= 0 && ent.state !== "retreat") retreatHero(ent);
+  }
 }
 
 
@@ -3020,8 +3308,87 @@ function drawUnit(u) {
   ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
   ctx.fillStyle = u.hp / u.maxHp > 0.5 ? "#7fd6a8" : u.hp / u.maxHp > 0.25 ? "#ffd479" : "#ff6a6a";
   ctx.fillRect(bx, by, bw * Math.max(0, u.hp / u.maxHp), bh);
+
+  /* 英雄增显：金色描边 + 头顶★ + 怒气条 + 大招光圈（v5 §5）——所有差异都来自 isHero 字段，不修改 kairoBody */
+  if (u.isHero) {
+    drawHeroFx(u);
+  }
 }
 
+function drawHeroFx(u) {
+  const def = HEROES[u.heroKey];
+  if (!def) return;
+  const R = u.radius;
+  const k = R / 22;                       // 22 = 英雄基础半径，归一化缩放
+  // ① 头顶金星：玩家与 AI 都能一眼识别「大人物」，金色高对比
+  ctx.save();
+  ctx.translate(u.x, u.y - R * 3.4);
+  ctx.fillStyle = "#c9b037";
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+    const ra = i % 2 === 0 ? 4.4 * k : 1.9 * k;
+    const x = Math.cos(a) * ra, y = Math.sin(a) * ra;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    const a2 = a + Math.PI / 5;
+    const ra2 = i % 2 === 0 ? 1.9 * k : 4.4 * k;
+    ctx.lineTo(Math.cos(a2) * ra2, Math.sin(a2) * ra2);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(20,16,12,.75)"; ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+  // ② 金色外边光：让英雄即使在大堆单位里也立刻被找到
+  ctx.save();
+  ctx.shadowColor = "#c9b037"; ctx.shadowBlur = 14;
+  ctx.strokeStyle = "#fff3c1"; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(u.x, u.y, R * 1.15, 0, 6.283); ctx.stroke();
+  ctx.restore();
+  // ③ 怒气条（独立于 HP 条）：紧贴脚下，宽度 ≈ HP 血条，给颜色按满气渐变
+  const hs = heroState(u.side);
+  if (hs) {
+    const bw = R * 2.6, bh = 3;
+    const bx = u.x - bw / 2, by = u.y + R * 1.05;
+    ctx.fillStyle = "rgba(20,16,12,.55)";
+    ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+    const r = hs.morale / HERO_CFG.moraleMax;
+    ctx.fillStyle = hs.ultT > 0 ? "#fff3c1" : (r < 0.4 ? "#5e7fb8" : r < 0.85 ? "#c9b037" : "#ffd479");
+    ctx.fillRect(bx, by, bw * r, bh);
+    // 大招 CD：另一根薄条，亮黄色背景 + 黑色覆盖表示剩余冷却
+    const cdw = bw, cdh = 2;
+    const cdbx = bx, cdy = by + bh + 1;
+    ctx.fillStyle = "rgba(255,255,200,.18)";
+    ctx.fillRect(cdbx, cdy, cdw, cdh);
+    if (hs.ultCd > 0) {
+      const ultCd = HEROES[hs.key].ult.cd;
+      ctx.fillStyle = "rgba(20,16,12,.55)";
+      const remain = hs.ultCd / ultCd;
+      ctx.fillRect(cdbx, cdy, cdw * Math.min(1, remain), cdh);
+    }
+    // 大招激活时的光环外圈脉冲：纯渲染层效果，不影响数值。
+    // 脉动必须用全局场景时间 sceneT（单调递增），不能用 ultT 推导 ——
+    // 用 ultT 得到的相位单调 0→1，sin() 只会漂移一次，出不来"脉冲"。
+    if (hs.ultT > 0) {
+      const dur = HEROES[hs.key].ult.dur;
+      const fade = 1 - hs.ultT / dur;                       // 0→1 淡出包络
+      const pulse = 0.65 + 0.35 * Math.sin(sceneT * 9);     // 真·周期脉动
+      ctx.save();
+      ctx.globalAlpha = 0.6 * fade * pulse;
+      ctx.strokeStyle = "#fff3c1"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(u.x, u.y, def.aura.radius + Math.sin(sceneT * 9) * 5, 0, 6.283); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // ④ 地面光环圈（常驻）：淡金色虚线，让玩家看到「这片区域享受减伤 / 大招增益」
+  ctx.save();
+  ctx.strokeStyle = hs && hs.ultT > 0 ? "rgba(255,243,193,.45)" : "rgba(201,176,55,.28)";
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -sceneT * 18;     // 慢跑马灯，提示「这里有光环」
+  ctx.beginPath(); ctx.arc(u.x, u.y, def.aura.radius, 0, 6.283); ctx.stroke();
+  ctx.restore();
+}
 function pxb(x, y, w, h, fill) {
   ctx.fillStyle = fill;
   ctx.fillRect(x, y, w, h);
@@ -4094,6 +4461,11 @@ function cheer() {
 
 document.addEventListener("keydown", e => {
   if (e.code === "Space") { e.preventDefault(); spaceHeld = true; }
+  else if (e.code === "KeyQ" && G.phase === "battle" && FLAGS.hero && FLAGS.heroUlt) {
+    // 英雄大招手动触发：与 AI 满气自动放共享同一入口 castHeroUlt()
+    // —— 失败时（未满气/cd 中）静默，不弹任何提示，避免在战斗中打断节奏
+    e.preventDefault(); castHeroUlt("player");
+  }
   else if (G.mode === "siege" && !G.siegeOver) {
     // 1-6 快捷买兵：与底部经营条「买兵」页从左到右的顺序一致
     const idx = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6"].indexOf(e.code);
@@ -4207,7 +4579,6 @@ function frame(now) {
 
 resetGame();
 buildCmdBar();
-loadSprites();   // 预载 assets/ 下精灵；缺失自动回退程序化小人，游戏不崩
 if (typeof window !== "undefined") { window.addEventListener("resize", resize); resize(); }
 requestAnimationFrame(frame);
 

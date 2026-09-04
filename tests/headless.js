@@ -182,6 +182,10 @@ function loadGame(seed) {
   branchDef, isBranchOn, lineName, lineSkill, counterMul, makeUnit, armySize,
   startRound, showUpgrade, closeUpgrade, chooseUpgrade, aiUpgrade, renderCycle,
   makeTreeCol, makeForkOpt, showEnd,
+  // 英雄系统（v5 §5）：FLAGS 开关 + 英雄读写入口。
+  // 没有这些导出，英雄系统完全无法被测试台驱动 —— 「无敌僵尸」bug 能存活至今的环境原因。
+  FLAGS, HERO_CFG, HEROES, heroState, heroEntity, heroOf, retreatHero, castHeroUlt,
+  damageUnit,
   document,
   resetGame, startGame, update, updateHud, updateDom,
   buyUnit, buyTech, buyBuilding, repairWall, upgradeWall, toggleStance,
