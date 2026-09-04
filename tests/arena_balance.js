@@ -4,8 +4,24 @@
 const { loadGame } = require("./headless.js");
 
 const GAMES = parseInt(process.argv[2] || "120", 10);
+/* 种子基可用 BAL_SEED 换族：单一种子只是一个样本，判定失衡要看多种子族的分布。 */
+const SEED_BASE = parseInt(process.env.BAL_SEED || "1000", 10);
+
+/* 玩家策略的随机源也必须种子化：headless 给沙箱注入了 seededMath（战斗可复现），
+   但玩家在升级节点的「随机点一个」原本直接用 Node 侧未种子的 Math.random()，
+   导致整条门禁不可复现 —— 同一份代码连跑会在 45% ↔ 40% 之间抖动。
+   门禁不可复现，就等于没有门禁：真回归会被噪声掩盖，噪声也会被误判成回归。 */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function runOne(seed) {
+  const rnd = mulberry32((seed * 2654435761) >>> 0);   // 每局独立流：改 GAMES 也不影响既有局结果
   const { T, flush } = loadGame(seed);
   T.resetGame(); T.startGame("arena");
   const grid = () => T.document.getElementById("upgrade-grid");
@@ -27,7 +43,7 @@ function runOne(seed) {
       const pks = all.filter(n => typeof n.className === "string" && n.className.includes("node pick"));
       const choices = opts.length ? opts : pks;
       if (!choices.length) break;
-      choices[Math.floor(Math.random() * choices.length)].onclick();   // 玩家：纯随机（与 AI 同强度）
+      choices[Math.floor(rnd() * choices.length)].onclick();   // 玩家：纯随机（与 AI 同强度，种子化可复现）
     }
     if (T.G.round > T.TOTAL_ROUNDS) break;
   }
@@ -38,7 +54,7 @@ function runOne(seed) {
 const rs = [];
 let tp = 0, te = 0, tmo = 0, peak = 0;
 for (let i = 0; i < GAMES; i++) {
-  const r = runOne(1000 + i * 37);
+  const r = runOne(SEED_BASE + i * 37);
   rs.push(r); tp += r.p; te += r.e; tmo += r.timeouts; peak = Math.max(peak, r.maxUnits);
 }
 const wins = rs.filter(r => r.p > r.e).length;
