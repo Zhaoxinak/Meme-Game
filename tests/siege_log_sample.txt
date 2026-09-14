@@ -1,4 +1,0 @@
-start 2026-09-02T17:58:09.727Z
-休闲/龟缩流: avg=4 med=4 min=4 max=4 win=100% earned=915 units=12 maxEnemy=3 err=0
-标准/龟缩流: avg=4 med=4 min=4 max=4 win=100% earned=1038 units=13 maxEnemy=4 err=0
-硬核/龟缩流: avg=4 med=4 min=4 max=4 win=100% earned=1255 units=14 maxEnemy=6 err=0
