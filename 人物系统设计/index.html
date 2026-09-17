@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通用人物系统 v2 · 部位拆分与装备设计 — 《时空拾遗》</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F4EFE3; --bg2:#ECE4D2; --ink:#33302B; --ink2:#6E6557;
+  --line:#D8CDB6; --line2:#C4B79B;
+  --red:#C3482C; --red-d:#9C3823;
+  --navy:#2E4658; --green:#3E7A6A; --gold:#C09A4E; --gold-d:#A07E34;
+  --purple:#6B4A8C; --brown:#8C5A2B; --leg:#A0713B;
+  --r1:#8A8578; --r2:#3E7A6A; --r3:#2E5F9E; --r4:#7B4FA0; --r5:#C09A4E;
+  --serif:"Noto Serif SC","Songti SC","STSong",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+img{display:block;max-width:100%}
+a{color:var(--red);text-decoration:none}
+section{padding:64px 0;border-top:1px solid var(--line)}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:30px}
+.sec-no{font-family:var(--serif);font-weight:900;font-size:15px;color:var(--red);letter-spacing:2px;white-space:nowrap}
+.sec-title{font-family:var(--serif);font-weight:900;font-size:32px;line-height:1.2}
+.sec-sub{color:var(--ink2);font-size:14px;margin-top:6px}
+h4{font-family:var(--serif);font-weight:700;font-size:18px;margin-bottom:8px}
+.chip{display:inline-block;padding:1px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--line2);color:var(--ink2);white-space:nowrap}
+.chip.solid{color:#fff;border:none}
+
+/* ===== Hero ===== */
+.hero{min-height:560px;display:flex;align-items:center;border:none;background:
+  radial-gradient(circle at 85% 20%, rgba(192,158,78,.18), transparent 40%),
+  radial-gradient(circle at 10% 90%, rgba(46,70,88,.12), transparent 45%), var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.hero-kicker{font-family:var(--serif);letter-spacing:6px;font-size:13px;color:var(--red);font-weight:700;margin-bottom:18px}
+.hero-title{font-family:var(--serif);font-weight:900;font-size:56px;line-height:1.14;letter-spacing:1px}
+.hero-title .hl{color:var(--red)}
+.hero-desc{margin:20px 0 28px;color:var(--ink2);font-size:16px;max-width:520px}
+.hero-stats{display:flex;gap:0;border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.4);max-width:560px}
+.stat{flex:1;padding:14px 8px;text-align:center;border-right:1px solid var(--line)}
+.stat:last-child{border:none}
+.stat b{display:block;font-family:var(--serif);font-size:26px;font-weight:900;color:var(--red)}
+.stat span{font-size:12px;color:var(--ink2)}
+.hero-fig{position:relative}
+.voxel-frame{background:var(--bg2);border:3px solid var(--ink);border-radius:16px;box-shadow:8px 8px 0 rgba(51,48,43,.15);padding:18px}
+.voxel-frame img{border:2px solid var(--ink);border-radius:10px}
+.frame-tag{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:12px;letter-spacing:3px;padding:4px 18px;border-radius:20px;white-space:nowrap}
+
+/* ===== 三层总览 ===== */
+.layer-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.layer-card{background:#fff;border:1px solid var(--line2);border-top:6px solid var(--navy);border-radius:12px;padding:22px;position:relative}
+.layer-card.l-skin{border-top-color:var(--green)}
+.layer-card.l-gear{border-top-color:var(--red)}
+.layer-tag{display:inline-block;font-size:12px;letter-spacing:2px;color:#fff;background:var(--navy);padding:2px 12px;border-radius:20px;margin-bottom:12px}
+.layer-card.l-skin .layer-tag{background:var(--green)}
+.layer-card.l-gear .layer-tag{background:var(--red)}
+.layer-card h3{font-family:var(--serif);font-size:20px;font-weight:900;margin-bottom:8px}
+.layer-card p{font-size:13.5px;color:var(--ink2)}
+.layer-list{margin-top:12px;padding-left:18px;font-size:13px;color:var(--ink)}
+.layer-list li{margin:4px 0}
+.layer-foot{margin-top:14px;padding-top:10px;border-top:1px dashed var(--line2);font-size:12px;color:var(--ink2)}
+
+/* ===== 部位拆分 ===== */
+.split-grid{display:grid;grid-template-columns:520px 1fr;gap:28px;align-items:start}
+.body-stage{background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:20px;position:sticky;top:20px}
+.body-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.body-title b{font-family:var(--serif);font-size:17px}
+.body-tip{font-size:12px;color:var(--ink2)}
+#bodySvg{width:100%;height:auto;cursor:pointer;user-select:none}
+.part-label{font-size:11px;fill:var(--ink2);pointer-events:none}
+.part{fill:var(--navy);stroke:#fff;stroke-width:1.5;cursor:pointer;transition:fill .15s}
+.z0{fill:#C3482C}.z1{fill:#B0703A}.z2{fill:#2E4658}.z3{fill:#3E7A6A}.z4{fill:#6B4A8C}.z5{fill:#A0713B}
+.part:hover{fill:var(--gold)}
+.part.dim{opacity:.22}
+.part.sel{fill:var(--red);stroke:var(--gold);stroke-width:2.5}
+.part.hit{animation:pulse .8s ease}
+@keyframes pulse{0%,100%{stroke-width:2.5}50%{stroke-width:6}}
+.slot-mini.active{border-color:var(--red);box-shadow:0 0 0 2px rgba(195,72,44,.22)}
+.zone-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.zone-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);background:#fff;border:1px solid var(--line2);border-radius:20px;padding:3px 10px;cursor:pointer}
+.zone-chip i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.zone-chip.active{border-color:var(--ink)}
+.slot-panel{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:22px;min-height:420px}
+.slot-panel.empty{display:flex;align-items:center;justify-content:center;color:var(--ink2);text-align:center}
+.slot-panel h3{font-family:var(--serif);font-size:24px;font-weight:900;display:flex;align-items:center;gap:12px}
+.slot-panel h3 .no{font-size:13px;background:var(--ink);color:var(--bg);padding:2px 10px;border-radius:20px}
+.slot-panel .zone{font-size:12px;letter-spacing:2px;color:var(--ink2);margin:4px 0 2px}
+.slot-panel .parts{font-size:13px;color:var(--ink2);margin-bottom:10px}
+.slot-panel .desc{font-size:14px;color:var(--ink);margin-bottom:14px}
+.slot-items{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.slot-item{display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--bg)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.slot-item .nm{font-weight:500}
+.slot-item .rv{margin-left:auto;font-size:11px;color:var(--ink2)}
+.slot-20{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+.slot-mini{border:1px solid var(--line2);border-radius:10px;padding:10px 12px;cursor:pointer;background:#fff;transition:border-color .15s, transform .15s}
+.slot-mini:hover{border-color:var(--gold);transform:translateY(-2px)}
+.slot-mini b{font-size:13.5px;display:block}
+.slot-mini .parts{font-size:11px;color:var(--ink2)}
+.slot-mini .cnt{font-size:11px;color:var(--red);font-weight:700}
+.slot-mini .zbar{height:4px;border-radius:2px;margin-top:6px}
+
+/* ===== 定制维度 ===== */
+.custom-grid{display:grid;grid-template-columns:1fr 460px;gap:28px;align-items:start}
+.dim-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line2);border-radius:12px;overflow:hidden;font-size:13.5px}
+.dim-table th{background:var(--navy);color:#fff;text-align:left;padding:10px 14px;font-weight:500;font-size:13px}
+.dim-table td{padding:9px 14px;border-top:1px solid var(--line);vertical-align:top}
+.dim-table td:first-child{font-weight:700;white-space:nowrap;font-family:var(--serif)}
+.dim-table tr:nth-child(even) td{background:#FBF8F0}
+.demo-card{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:20px;position:sticky;top:20px}
+.demo-title{font-family:var(--serif);font-weight:900;font-size:18px;margin-bottom:4px}
+.demo-sub{font-size:12px;color:var(--ink2);margin-bottom:14px}
+.demo-control{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.demo-control label{width:64px;font-size:13px;color:var(--ink2);flex:none}
+.demo-control input[type=range]{flex:1;accent-color:var(--red)}
+.demo-control output{width:52px;text-align:right;font-size:12px;color:var(--ink);font-family:var(--serif);font-weight:700}
+.demo-fig{display:flex;justify-content:center;margin-top:6px}
+.demo-fig svg{height:340px}
+
+/* ===== 图鉴 ===== */
+.catalog-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.cat-tab{padding:6px 16px;border-radius:20px;border:1px solid var(--line2);background:#fff;font-size:13px;cursor:pointer;color:var(--ink)}
+.cat-tab.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cat-tab small{opacity:.75;margin-left:4px}
+.cat-spacer{flex:1}
+.gear-block{background:#fff;border:1px solid var(--line2);border-radius:14px;margin-bottom:22px;overflow:hidden;scroll-margin-top:20px}
+.gear-block.hl{box-shadow:0 0 0 3px var(--gold)}
+.gear-head{display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--bg2);border-bottom:1px solid var(--line2)}
+.gear-no{font-family:var(--serif);font-weight:900;font-size:15px;width:36px;height:36px;border-radius:9px;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.gear-head .nm{font-family:var(--serif);font-size:19px;font-weight:900}
+.gear-head .parts{font-size:12.5px;color:var(--ink2)}
+.gear-head .cnt{margin-left:auto;font-size:12px;color:var(--ink2);white-space:nowrap}
+.gear-items{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.gear-item{padding:12px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}
+.gear-item:nth-child(4n){border-right:none}
+.gear-item .g-top{display:flex;align-items:center;gap:7px}
+.gear-item .nm{font-weight:700;font-size:13.5px}
+.gear-item .rv{margin-left:auto;font-size:10.5px;padding:1px 7px;border-radius:20px;color:#fff;white-space:nowrap}
+.gear-item .desc{font-size:12px;color:var(--ink2);margin-top:3px}
+
+/* ===== 套装 ===== */
+.sets-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.set-card{background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.set-img{aspect-ratio:1/1.15;overflow:hidden;background:var(--bg2);position:relative}
+.set-img img{width:100%;height:100%;object-fit:cover;object-position:top}
+.set-tag{position:absolute;top:10px;left:10px;background:var(--ink);color:var(--bg);font-size:11px;padding:3px 12px;border-radius:20px;letter-spacing:1px}
+.set-body{padding:16px 18px;flex:1;display:flex;flex-direction:column}
+.set-body h4{margin-bottom:2px}
+.set-body .set-desc{font-size:12.5px;color:var(--ink2);margin-bottom:10px}
+.set-gear{display:flex;flex-wrap:wrap;gap:6px}
+.set-gear span{font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--ink)}
+
+/* ===== 规则 ===== */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.rule-card{background:#fff;border:1px solid var(--line2);border-radius:12px;padding:20px}
+.rule-card h4{display:flex;align-items:center;gap:8px}
+.rule-num{width:22px;height:22px;border-radius:6px;background:var(--red);color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;flex:none}
+.conflict-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.conflict-table th,.conflict-table td{border:1px solid var(--line2);padding:6px 9px;text-align:left}
+.conflict-table th{background:var(--bg2)}
+.flow{list-style:none;counter-reset:flow}
+.flow li{counter-increment:flow;padding:7px 0 7px 42px;position:relative;font-size:13.5px;border-bottom:1px dashed var(--line)}
+.flow li:last-child{border:none}
+.flow li::before{content:counter(flow);position:absolute;left:0;top:7px;width:26px;height:26px;background:var(--navy);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:13px}
+footer{padding:36px 0 60px;color:var(--ink2);font-size:12.5px;text-align:center;border-top:1px solid var(--line)}
+
+@media(max-width:980px){
+  .hero-grid{grid-template-columns:1fr;gap:36px}
+  .hero-title{font-size:40px}
+  .layer-3{grid-template-columns:1fr}
+  .split-grid{grid-template-columns:1fr}
+  .body-stage{position:static}
+  .custom-grid{grid-template-columns:1fr}
+  .demo-card{position:static}
+  .gear-items{grid-template-columns:repeat(2,1fr)}
+  .gear-item:nth-child(4n){border-right:1px solid var(--line)}
+  .gear-item:nth-child(2n){border-right:none}
+  .sets-grid{grid-template-columns:1fr}
+  .rules-grid{grid-template-columns:1fr}
+  .slot-20{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:560px){
+  .wrap{padding:0 16px}
+  .hero-title{font-size:32px}
+  .hero-stats{flex-wrap:wrap}
+  .stat{min-width:50%}
+  .sec-title{font-size:26px}
+  .slot-items{grid-template-columns:1fr}
+  .gear-items{grid-template-columns:1fr}
+  .gear-item:nth-child(n){border-right:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="hero-kicker">《时空拾遗》 · 通用人物系统</div>
+      <h1 class="hero-title">部位拆分 × 换装 × 定制<br><span class="hl">人物系统设计 v2</span></h1>
+      <p class="hero-desc">把角色从「一张图」拆成「一套零件」：三层结构（骨架体型 / 外观皮肤 / 装备槽），二十个装备槽位、一百六十余件装备。高矮胖瘦、男女老少、一颦一笑，全部可以调。</p>
+      <div class="hero-stats">
+        <div class="stat"><b>20</b><span>装备槽位</span></div>
+        <div class="stat"><b>168</b><span>件装备</span></div>
+        <div class="stat"><b>12</b><span>定制维度</span></div>
+        <div class="stat"><b>6</b><span>预设套装</span></div>
+      </div>
+    </div>
+    <div class="hero-fig">
+      <div class="voxel-frame"><img src="assets/hero.png" alt="基础角色·积木像素风"></div>
+      <span class="frame-tag">基础素体 · 积木像素 Q 版</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ 01 系统总览 ============ -->
+<section id="overview">
+  <div class="sec-head">
+    <span class="sec-no">01</span>
+    <div><h2 class="sec-title">系统总览：三层结构</h2><div class="sec-sub">拆分的思路是「各管一层」——骨架管体型，皮肤管长相，装备管穿搭，互不打架。</div></div>
+  </div>
+  <div class="layer-3">
+    <div class="layer-card">
+      <span class="layer-tag">LAYER 1 · SKELETON</span>
+      <h3>骨架体型层</h3>
+      <p>决定角色「是多大一坨」：头身比、身高、肩宽、腰围、臀围、四肢粗细。所有部位坐标由参数实时计算，改参数 = 改体型。</p>
+      <ul class="layer-list">
+        <li>头身比 1.8~3.0（萌娃 → 成人体）</li>
+        <li>身高 ±15%、肩宽 / 腰围 / 臀围 4 档</li>
+        <li>性别基模：男 / 女体模差异在此层</li>
+      </ul>
+      <div class="layer-foot">实现：voxel 网格参数化缩放，12 个挂点坐标由参数表生成</div>
+    </div>
+    <div class="layer-card l-skin">
+      <span class="layer-tag">LAYER 2 · SKIN</span>
+      <h3>外观皮肤层</h3>
+      <p>决定角色「长什么样」：肤色、脸型、眼睛、眉毛、嘴巴、发型发色、胡子、表情。皮肤不占装备槽，是角色自身的属性。</p>
+      <ul class="layer-list">
+        <li>脸型 4 款 × 眼型 5 款 × 眉型 5 款</li>
+        <li>发色 8 色 × 发型 12 款</li>
+        <li>表情 6 种（微笑 / 大笑 / 生气 / 惊讶 / 发呆 / 得意）</li>
+      </ul>
+      <div class="layer-foot">实现：部位网格库 + 染色通道（发色 / 眼色 / 肤色单独上色）</div>
+    </div>
+    <div class="layer-card l-gear">
+      <span class="layer-tag">LAYER 3 · GEAR</span>
+      <h3>装备槽层</h3>
+      <p>决定角色「穿了什么」：20 个槽位覆盖全身，每个槽位一套装备库。换装只换挂载物，不动骨架和皮肤。</p>
+      <ul class="layer-list">
+        <li>头部区 5 槽 · 颈区 1 槽 · 躯干区 5 槽</li>
+        <li>上肢区 3 槽 · 武器区 2 槽 · 下肢区 4 槽</li>
+        <li>每槽 6~12 件，共 168 件（含朝代 / 现代 / 萌系）</li>
+      </ul>
+      <div class="layer-foot">实现：骨骼挂点 + 网格替换，冲突规则见 §07</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 部位拆分 ============ -->
+<section id="split">
+  <div class="sec-head">
+    <span class="sec-no">02</span>
+    <div><h2 class="sec-title">部位拆分：从 6 槽扩到 20 槽</h2><div class="sec-sub">你列的 头/脸/颈/身体/胳膊/手/屁股/大腿/小腿/脚腕/脚掌 全部保留，再补拆出 头发、耳朵、眼睛、肩膀、上臂、手腕、背部、腰部、胸部 等 9 处。点积木人身上任意部位，看它对应的装备槽。</div></div>
+  </div>
+  <div class="split-grid">
+    <div class="body-stage">
+      <div class="body-title"><b>可点击 · 积木素体</b><span class="body-tip">点击部位 → 右侧显示装备槽</span></div>
+      <svg id="bodySvg" viewBox="0 0 360 566" role="img" aria-label="积木人部位示意图，可点击查看装备槽"></svg>
+      <div class="zone-chips" id="zoneChips"></div>
+    </div>
+    <div>
+      <div class="slot-panel" id="slotPanel">
+        <div class="empty-hint" style="color:var(--ink2);text-align:center;padding:80px 20px">
+          <div style="font-family:var(--serif);font-size:22px;font-weight:900;color:var(--red)">点击左侧积木人</div>
+          <div style="font-size:14px;margin-top:8px">或在下方槽位卡片中任选一个，查看覆盖部位与装备库</div>
+        </div>
+      </div>
+      <div class="slot-20" id="slot20"></div>
+    </div>
+  </div>
+  <figure style="margin-top:26px;background:#fff;border:1px solid var(--line2);border-radius:14px;padding:18px">
+    <figcaption style="font-family:var(--serif);font-weight:700;font-size:16px;margin-bottom:12px">换装页示意 · 全身 20 槽位总览（AI 概念渲染，可作 UI 底稿）</figcaption>
+    <img src="assets/slot-overview-20.png" alt="全身装备槽位总览图" style="border-radius:10px;border:1px solid var(--line)">
+  </figure>
+</section>
+
+<!-- @SECTION_SPLIT -->
+
+<!-- ============ 03 定制维度 ============ -->
+<section id="custom">
+  <div class="sec-head">
+    <span class="sec-no">03</span>
+    <div><h2 class="sec-title">定制维度：高矮胖瘦到一颦一笑</h2><div class="sec-sub">左边是完整参数表，右边是体型模拟器——拖动滑块，积木人会实时变形，验证「骨架体型层」的效果。</div></div>
+  </div>
+  <div class="custom-grid">
+    <div>
+      <table class="dim-table">
+        <thead><tr><th style="width:26%">维度</th><th style="width:30%">可选项</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>性别</td><td>男 / 女</td><td>影响体模、五官库与声线，不占装备槽</td></tr>
+          <tr><td>头身比</td><td>1.8 / 2.2 / 2.5 / 2.8 / 3.0</td><td>1.8 萌娃 · 2.2 幼童 · 2.5 标准 Q 版 · 2.8 少年 · 3.0 成人体</td></tr>
+          <tr><td>身高</td><td>矮 / 标准 / 高（±15%）</td><td>只拉长骨架，不改变头身比</td></tr>
+          <tr><td>体型</td><td>纤细 / 标准 / 圆润 / 壮硕</td><td>肩宽、腰围、臀围、四肢粗细联动</td></tr>
+          <tr><td>肤色</td><td>白皙 / 自然 / 小麦 / 深棕</td><td>4 档肤色，染色通道实现</td></tr>
+          <tr><td>脸型</td><td>圆 / 方 / 瓜子 / 长</td><td>4 款脸部网格</td></tr>
+          <tr><td>眼型</td><td>大眼 / 圆眼 / 细长 / 下垂 / 吊梢</td><td>5 款，情绪与性格都靠它</td></tr>
+          <tr><td>眼色</td><td>墨黑 / 栗棕 / 琥珀 / 碧绿 / 湛蓝 / 绯红 / 鎏金 / 银灰</td><td>8 色</td></tr>
+          <tr><td>眉型</td><td>平眉 / 剑眉 / 柳叶 / 八字 / 粗眉</td><td>5 款，眉色随发色</td></tr>
+          <tr><td>嘴型</td><td>微笑 / 抿嘴 / 咧嘴 / 嘟嘴</td><td>4 款基础嘴型</td></tr>
+          <tr><td>鼻型</td><td>圆鼻 / 挺鼻</td><td>Q 版弱化，2 款即可</td></tr>
+          <tr><td>发型 × 发色</td><td>12 款 × 8 色</td><td>发型见装备槽 01，发色含 墨黑/栗棕/亚麻/银白/赤红/青碧/粉樱/鎏金</td></tr>
+          <tr><td>胡子</td><td>无 / 八字 / 山羊 / 络腮</td><td>男性角色专属</td></tr>
+          <tr><td>表情</td><td>微笑 / 大笑 / 生气 / 惊讶 / 发呆 / 得意</td><td>6 种基础表情，战斗中可叠加</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="demo-card">
+      <div class="demo-title">体型模拟器</div>
+      <div class="demo-sub">示意 · 实时演示骨架体型层的参数化效果</div>
+      <div class="demo-control"><label>头身比</label><input type="range" id="slRatio" min="1.8" max="3.0" step="0.1" value="2.5"><output id="outRatio">2.5</output></div>
+      <div class="demo-control"><label>体型</label><input type="range" id="slBody" min="0.7" max="1.5" step="0.05" value="1"><output id="outBody">标准</output></div>
+      <div class="demo-control"><label>身高</label><input type="range" id="slTall" min="0.85" max="1.15" step="0.01" value="1"><output id="outTall">100%</output></div>
+      <div class="demo-fig"><svg id="demoSvg" viewBox="0 0 300 520" role="img" aria-label="体型参数演示"></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- @SECTION_CUSTOM -->
+
+<!-- ============ 04 装备图鉴 ============ -->
+<section id="catalog">
+  <div class="sec-head">
+    <span class="sec-no">04</span>
+    <div><h2 class="sec-title">装备图鉴：20 槽 × 168 件</h2><div class="sec-sub">按部位区筛选，或按稀有度过滤。名称带梗的（自拍杆、红领巾、蟹钳手套…）都是「现代穿越 + 诙谐」定位，契合《时空拾遗》轻松基调。</div></div>
+  </div>
+  <div class="catalog-toolbar" id="catToolbar">
+    <button class="cat-tab active" data-zone="all">全部<small>20槽</small></button>
+    <button class="cat-tab" data-zone="头部区">头部<small>5槽</small></button>
+    <button class="cat-tab" data-zone="颈区">颈部<small>1槽</small></button>
+    <button class="cat-tab" data-zone="躯干区">躯干<small>5槽</small></button>
+    <button class="cat-tab" data-zone="上肢区">上肢<small>3槽</small></button>
+    <button class="cat-tab" data-zone="武器区">武器<small>2槽</small></button>
+    <button class="cat-tab" data-zone="下肢区">下肢<small>4槽</small></button>
+    <span class="cat-spacer"></span>
+    <select id="rarityFilter" style="padding:6px 12px;border:1px solid var(--line2);border-radius:20px;background:#fff;font-size:13px">
+      <option value="0">全部稀有度</option>
+      <option value="1">普通</option>
+      <option value="2">精良</option>
+      <option value="3">稀有</option>
+      <option value="4">史诗</option>
+      <option value="5">传说</option>
+    </select>
+  </div>
+  <div id="gearBlocks"></div>
+</section>
+
+<!-- @SECTION_CATALOG -->
+
+<!-- ============ 05 预设套装 ============ -->
+<section id="sets">
+  <div class="sec-head">
+    <span class="sec-no">05</span>
+    <div><h2 class="sec-title">预设套装：一套件件搭</h2><div class="sec-sub">套装 = 每个槽位预填一件，一键换装。六套均已配备概念渲染图。</div></div>
+  </div>
+  <div class="sets-grid">
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">三国 · 名士</span><img src="assets/set-sanguo.png" alt="三国名士套装"></div>
+      <div class="set-body">
+        <h4>三国 · 卧龙扇</h4>
+        <div class="set-desc">青绿交领 + 黑披风 + 白羽扇，羽扇纶巾的标配。</div>
+        <div class="set-gear"><span>发型·纶巾束发</span><span>头饰·纶巾</span><span>眼部·圆框眼镜</span><span>上装·青绿交领</span><span>背部·黑披风</span><span>主手·白羽扇</span><span>副手·竹简</span></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">唐 · 长安贵女</span><img src="assets/set-tang.png" alt="唐长安贵女套装"></div>
+      <div class="set-body">
+        <h4>唐 · 红装雪氅</h4>
+        <div class="set-desc">赤色圆领袍 + 白绒披风，冬日长安最靓的崽。</div>
+        <div class="set-gear"><span>发型·垂云高髻</span><span>头饰·高装巾帽</span><span>上装·赤色圆领袍</span><span>背部·白绒披风</span><span>腰部·玉带</span><span>主手·如意</span><span>脚掌·绣花鞋</span></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">宋 · 赶考书生</span><img src="assets/set-song.png" alt="宋赶考书生套装"></div>
+      <div class="set-body">
+        <h4>宋 · 青衫赴考</h4>
+        <div class="set-desc">深蓝长袍 + 绿披风 + 折扇，进京赶考不带伞。</div>
+        <div class="set-gear"><span>头饰·乌纱帽</span><span>眼部·圆框眼镜</span><span>上装·深蓝交领</span><span>背部·青绿披风</span><span>主手·折扇</span><span>副手·线装书</span><span>脚掌·布鞋</span></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">明 · 锦衣侠客</span><img src="assets/set-ming.png" alt="明锦衣侠客套装"></div>
+      <div class="set-body">
+        <h4>明 · 红氅藏锋</h4>
+        <div class="set-desc">藏青锦袍 + 红披风 + 唐刀，平安符保一路平安。</div>
+        <div class="set-gear"><span>头饰·乌纱帽</span><span>眼部·墨镜</span><span>上装·藏青锦袍</span><span>背部·红披风</span><span>腰部·虎纹腰带</span><span>主手·唐横刀</span><span>副手·平安符</span></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">现代 · 穿越客</span><img src="assets/set-modern.png" alt="现代穿越客套装"></div>
+      <div class="set-body">
+        <h4>现代 · 穿越客</h4>
+        <div class="set-desc">新设计 · 把 2026 年带进大唐的带货主播。</div>
+        <div class="set-gear"><span>发型·爆炸头</span><span>头饰·棒球帽</span><span>眼部·墨镜</span><span>耳部·头戴耳机</span><span>上装·连帽卫衣</span><span>手部·白手套</span><span>主手·自拍杆</span><span>脚掌·运动鞋</span></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-img"><span class="set-tag">萌宠 · 兔兔侠</span><img src="assets/set-rabbit.png" alt="萌宠兔兔侠套装"></div>
+      <div class="set-body">
+        <h4>萌宠 · 兔兔侠</h4>
+        <div class="set-desc">新设计 · 全服唯一的猛（萌）兔，战力全靠可爱。</div>
+        <div class="set-gear"><span>头饰·兔耳兜帽</span><span>耳部·铃铛耳坠</span><span>颈饰·铃铛项圈</span><span>上装·肚兜</span><span>手部·毛绒爪</span><span>背部·小翅膀</span><span>脚掌·毛绒拖鞋</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- @SECTION_SETS -->
+
+<!-- ============ 06 换装规则与实现 ============ -->
+<section id="rules">
+  <div class="sec-head">
+    <span class="sec-no">06</span>
+    <div><h2 class="sec-title">换装规则与实现建议</h2><div class="sec-sub">装备之间会互相遮挡，规则表用来兜住「穿得合理」；实现流程给研发落地用。</div></div>
+  </div>
+  <div class="rules-grid">
+    <div class="rule-card">
+      <h4><span class="rule-num">A</span>槽位遮挡规则</h4>
+      <table class="conflict-table" style="margin-top:12px">
+        <tr><th>涉及槽位</th><th>规则</th></tr>
+        <tr><td>发型 × 头饰</td><td>头饰优先；帽檐覆盖处隐藏发型，露出部分保留；兜帽全遮发型</td></tr>
+        <tr><td>眼部 × 面部</td><td>面具同时覆盖眼、面两槽；口罩不遮眼</td></tr>
+        <tr><td>上装 × 肩部</td><td>甲胄自带肩甲时，肩槽显示合并件「甲胄-肩」</td></tr>
+        <tr><td>上装 × 下装</td><td>长袍遮下装，只显示袍摆以下；短衣不遮</td></tr>
+        <tr><td>下装 × 腿槽</td><td>长裙覆盖大腿/小腿槽；短裙不遮</td></tr>
+        <tr><td>主手 × 副手</td><td>双手武器（青龙刀/长枪/自拍杆）同时占用双槽</td></tr>
+        <tr><td>背部 × 上装</td><td>披风不与背包共存，取优先级高者</td></tr>
+      </table>
+    </div>
+    <div class="rule-card">
+      <h4><span class="rule-num">B</span>换装实现流程</h4>
+      <ol class="flow" style="margin-top:12px">
+        <li>选槽位 → 读取该槽挂点坐标（12 挂点，参数化生成）</li>
+        <li>校验遮挡规则表，标记被隐藏的关联槽位</li>
+        <li>替换挂载网格（voxel 单位），皮肤/发色走染色通道</li>
+        <li>重算包围盒与碰撞体，更新战斗判定尺寸</li>
+        <li>写档：存槽位 ID 而非坐标，保证换体型不穿模</li>
+      </ol>
+    </div>
+    <div class="rule-card">
+      <h4><span class="rule-num">C</span>体型参数表（voxel 单位）</h4>
+      <table class="conflict-table" style="margin-top:12px">
+        <tr><th>参数</th><th>标准值</th><th>档位</th></tr>
+        <tr><td>头身比</td><td>2.5</td><td>1.8 / 2.2 / 2.5 / 2.8 / 3.0</td></tr>
+        <tr><td>身高系数</td><td>1.00</td><td>0.85 ~ 1.15</td></tr>
+        <tr><td>肩宽系数</td><td>1.00</td><td>0.8 / 1.0 / 1.2 / 1.4</td></tr>
+        <tr><td>腰围系数</td><td>1.00</td><td>0.8 / 1.0 / 1.3 / 1.6</td></tr>
+        <tr><td>臀围系数</td><td>1.00</td><td>0.8 / 1.0 / 1.2 / 1.5</td></tr>
+        <tr><td>四肢粗细</td><td>1.00</td><td>0.8 / 1.0 / 1.2 / 1.5</td></tr>
+      </table>
+    </div>
+    <div class="rule-card">
+      <h4><span class="rule-num">D</span>数据表规划</h4>
+      <ul class="layer-list">
+        <li><b>body_params.json</b>：12 挂点坐标 + 体型参数档位</li>
+        <li><b>slots.json</b>：20 槽定义、所属部位、遮挡优先级</li>
+        <li><b>gear.json</b>：168 件装备（名称/稀有度/贴图/挂点/占用槽）</li>
+        <li><b>skin.json</b>：性别/脸型/五官/发色/表情库</li>
+        <li><b>presets.json</b>：预设套装 = 槽位 ID → 装备 ID 映射</li>
+      </ul>
+      <div class="layer-foot" style="margin-top:14px">通用建议：所有装备先按「普通 → 传说」五档配好，数值与战斗系统解耦，先跑通换装再填属性。</div>
+    </div>
+  </div>
+</section>
+
+<!-- @SECTION_RULES -->
+
+</main>
+<footer>
+  《时空拾遗》通用人物系统 v2 · 部位拆分与装备设计规格书<br>数据为设计初值，可随时调整 · 生成于 2026-09-14
+</footer>
+
+<script>
+/* ============ 数据 ============ */
+const ZONES = {头部区:'#C3482C', 颈区:'#B0703A', 躯干区:'#2E4658', 上肢区:'#3E7A6A', 武器区:'#6B4A8C', 下肢区:'#A0713B'};
+const ZONE_KEYS = Object.keys(ZONES);
+const RARITY = {1:{n:'普通',c:'#8A8578'},2:{n:'精良',c:'#3E7A6A'},3:{n:'稀有',c:'#2E5F9E'},4:{n:'史诗',c:'#7B4FA0'},5:{n:'传说',c:'#C09A4E'}};
+
+/* 每槽: [id, 名称, 区, 覆盖部位, 说明, 装备[名称,稀有度,一句话]] */
+const SLOTS = [
+['01','发型','头部区','头·顶部/后脑','角色自身外观，也当槽位换；12 款 × 8 发色，帽子下可共存。',[
+['垂云高髻',4,'唐仕女高髻，缀金步摇'],['总角双髻',1,'宋童双丫角'],['束发玉冠',2,'明公子束发'],['纶巾束发',2,'三国名士风'],['披肩卷发',3,'现代穿越卷毛'],['高马尾',1,'少侠英气'],['麻花双辫',1,'田园少女'],['光头戒疤',3,'假和尚梗'],['爆炸头',4,'摇滚穿越'],['丸子头',1,'厨娘道童'],['利落板寸',1,'硬汉标配'],['鹤发长须',5,'仙人老翁']]],
+['02','头饰','头部区','头·顶/额','帽、冠、巾、兜帽都在这；优先级高于发型。',[
+['唐幞头',2,'唐式软脚幞头'],['乌纱帽',3,'明官帽，两侧飞翅'],['东坡巾',2,'宋士高巾'],['纶巾',2,'诸葛同款'],['斗笠',1,'江湖浪人'],['瓜皮帽',1,'市井小帽'],['凤冠',5,'女帝仪驾'],['明光盔',3,'将军铁盔'],['棒球帽',1,'现代客串'],['兔耳兜帽',4,'萌系高人气'],['玩具金冠',3,'诙谐小皇冠']]],
+['03','眼部','头部区','脸·双眼','眼镜、护目镜、眼罩与眼部特效。',[
+['圆框眼镜',1,'宋式书生镜'],['墨镜',3,'现代穿越'],['单眼镜',2,'绅士链镜'],['独眼罩',2,'独眼侠'],['护目镜',3,'工匠防护'],['红瞳特效',4,'狂战士觉醒'],['星星眼贴',1,'星星眼贴纸'],['狐眼影',4,'妩媚狐妆']]],
+['04','耳部','头部区','头·两侧','耳环、耳机、耳罩；Q 版也做得清。',[
+['金耳环',2,'西域胡商款'],['玉坠耳饰',3,'大家闺秀'],['头戴耳机',1,'现代穿越'],['毛绒耳罩',1,'暖冬保暖'],['羽毛耳饰',2,'异域风情'],['铃铛耳坠',1,'萌宠铃'],['龙角耳机',4,'妖气十足']]],
+['05','面部','头部区','脸·中下部','口罩、面纱、面具、胡子与红妆。',[
+['蒙面巾',2,'刺客黑巾'],['白面纱',3,'新娘/西域'],['傩戏鬼面',4,'驱邪面具'],['八字胡',1,'账房先生'],['山羊胡',2,'老道标配'],['花钿红妆',3,'唐女额妆'],['腮红贴纸',1,'Q 萌加分'],['铁面具',3,'将军铁面'],['口罩',1,'现代梗']]],
+['06','颈饰','颈区','颈','围巾、项链、项圈都挂这里。',[
+['红围巾',1,'侠客系'],['玉佩项链',3,'君子佩玉'],['佛珠',2,'高僧念珠'],['铃铛项圈',1,'宠物系'],['蝴蝶领结',1,'绅士梗'],['毛绒围脖',1,'冬日限定'],['金锁项圈',2,'富家子'],['红领巾',4,'小学生梗']]],
+['07','肩部','躯干区','肩','护肩、披肩、垫肩；甲胄合并件见规则表。',[
+['皮护肩',2,'武士轻甲'],['毛绒披肩',3,'贵妇款'],['明光肩甲',3,'将军重甲'],['方巾搭肩',1,'苦力布'],['荷叶肩饰',4,'公主风'],['垫肩西装',5,'现代梗·气势拉满'],['竹扁担',1,'货郎营生']]],
+['08','上装','躯干区','胸·躯干前','全身上下最核心的槽，衣袍铠甲都在此。',[
+['交领汉服',1,'基础常服'],['圆领袍',2,'唐官服'],['唐襦裙',2,'唐女装'],['短打劲装',1,'武侠夜行'],['明光铠',3,'重甲精锐'],['道袍',2,'仙风道骨'],['僧袍',1,'出家人'],['织金锦袍',3,'富商豪气'],['龙袍',5,'穿越梗·胆子大'],['连帽卫衣',3,'现代舒适'],['肚兜',2,'萌女限定'],['羽衣',4,'仙人羽裳']]],
+['09','背部','躯干区','背','披风、背包、翅膀与挂载武器。',[
+['红披风',1,'侠客标志'],['黑披风',2,'刺客夜行'],['白绒披风',3,'唐冬装'],['竹编背篓',1,'采药郎'],['书箱',2,'赶考书生'],['弓囊',3,'猎手背挂'],['小翅膀',4,'天使/恶魔'],['战旗',3,'旗手出征'],['酒葫芦',1,'醉侠']]],
+['10','腰部','躯干区','腰','腰带、围裙、腰饰。',[
+['布腰带',1,'基础款'],['玉带',2,'官服标配'],['皮带扣',1,'现代款'],['围裙',3,'厨神上岗'],['酒葫芦',2,'侠客随身'],['铜钱串',1,'财迷本性'],['流苏玉佩',3,'仕女摇曳'],['虎纹腰带',4,'猛将威仪']]],
+['11','下装','躯干区','臀·胯','裤子、裙子、甲裙都算这一槽。',[
+['布裤',1,'基础款'],['襦裙摆',2,'唐女裙摆'],['鱼鳞甲裙',3,'武将下甲'],['灯笼裤',2,'武僧轻便'],['短裤',1,'现代清凉'],['百褶裙',3,'宋女款'],['开裆裤',4,'婴孩梗·慎用'],['玄色劲裤',1,'刺客夜行']]],
+['12','上臂','上肢区','上臂','臂环、护臂、袖套。',[
+['金臂环',2,'力士图腾'],['皮护臂',1,'弓手必备'],['云纹臂袖',3,'舞姬水袖基座'],['将军臂章',3,'令旗标记'],['刺青贴',1,'纹身贴纸'],['水袖',4,'戏子长袖']]],
+['13','手腕','上肢区','前臂·腕','护腕、手镯、手串。',[
+['皮护腕',1,'基础防护'],['玉镯',3,'仕女温润'],['红绳',1,'月老梗'],['手表',5,'现代梗·时间旅人'],['铁护腕',2,'精铁锻造'],['铃铛手环',1,'萌系'],['佛珠手串',2,'居士盘串']]],
+['14','手部','上肢区','手','手套、拳套、爪子。',[
+['白手套',1,'绅士礼仪'],['武僧拳套',2,'拳拳到肉'],['毛绒爪',4,'萌宠爪爪'],['铁指虎',3,'街头斗士'],['玉扳指',2,'射箭护指'],['长指甲套',4,'宫廷女·华贵'],['蟹钳手套',5,'梗·蟹老板']]],
+['15','主手','武器区','右手','右手武器与大型道具。',[
+['长剑',1,'武将标配'],['青龙偃月刀',5,'关公梗·大杀器'],['唐横刀',2,'唐刀锋锐'],['折扇',1,'书生谈笑'],['白羽扇',4,'诸葛梗·计谋+1'],['长枪',2,'小将突刺'],['猎弓',3,'百步穿杨'],['巨型毛笔',3,'文豪梗·笔走龙蛇'],['自拍杆',5,'现代梗·记录历史'],['菜刀',3,'厨神之刃'],['拂尘',2,'道士驱邪'],['如意',4,'祥瑞宝物']]],
+['16','副手','武器区','左手','左手盾牌、书籍、道具。',[
+['圆盾',1,'步兵圆盾'],['线装书',1,'书生捧读'],['竹简',2,'古风厚重'],['灯笼',1,'夜市灯火'],['酒葫芦',2,'酒仙随身'],['算盘',3,'账房梗·算无遗策'],['油纸伞',3,'江南烟雨'],['应援小旗',1,'全场最佳'],['药箱',2,'郎中医箱']]],
+['17','大腿','下肢区','大腿','腿甲、长袜、绑腿。',[
+['腿甲',2,'武将下甲'],['白长袜',1,'女学生梗'],['绑腿布',1,'行军标配'],['鱼鳞腿甲',3,'水军精锐'],['豹纹腿套',4,'野性十足'],['铃铛腿环',3,'舞者灵巧']]],
+['18','小腿','下肢区','小腿','绑腿、胫甲、袜类。',[
+['绑腿',1,'基础款'],['胫甲',2,'重甲下段'],['毛绒护腿',1,'暖冬限定'],['黑丝袜',4,'现代梗·穿越必备'],['草编护腿',1,'山民手作'],['鳞纹胫甲',5,'龙系鳞甲']]],
+['19','脚腕','下肢区','脚腕','护踝、脚环、脚链。',[
+['银铃脚环',3,'舞娘叮当'],['皮护踝',1,'武者护具'],['铁链',2,'囚徒梗·罪与罚'],['红绳脚链',1,'月老红线'],['羽毛脚环',3,'异域风情'],['水晶脚饰',4,'仙气缭绕']]],
+['20','脚掌','下肢区','脚','鞋、靴、木屐。',[
+['布鞋',1,'基础款'],['官靴',2,'皂隶差靴'],['长靴',1,'侠客踏风'],['草鞋',1,'苦行磨砺'],['木屐',2,'雨日啪嗒'],['绣花鞋',3,'闺秀精致'],['运动鞋',3,'现代梗·舒适'],['毛绒拖鞋',4,'居家梗·懒得动'],['虎头鞋',5,'婴孩梗·福气'],['高跟绣鞋',3,'女装登场']]],
+].map((s,i)=>({id:s[0],name:s[1],zone:s[2],parts:s[3],desc:s[4],items:s[5],zi:ZONE_KEYS.indexOf(s[2])}));
+
+/* ============ 积木人几何 ============ */
+function geo(p){
+  const f = p.fat, r = p.ratio, t = p.tall;
+  const headW = 84, headH = 88, headY = 14, headX = 180-headW/2;
+  const neckH = 16, neckW = 18+6*f, neckX = 180-neckW/2, neckY = headY+headH;
+  const shW = 116*f, shH = 14, shY = neckY+neckH-8, shX = 180-shW/2;
+  const torsoW = 84*f, torsoH = 96, torsoX = 180-torsoW/2, torsoY = shY+shH;
+  const waistW = 70*f, waistH = 14, waistX = 180-waistW/2, waistY = torsoY+torsoH-18;
+  const hipW = 88*f, hipH = 70, hipX = 180-hipW/2, hipY = waistY+waistH;
+  const armW = 24*f, upperH = 62, foreH = 30, handH = 22, handW = 18*f;
+  const axL = 180-shW/2-armW, axR = 180+shW/2;
+  const uyL = shY+shH, fyL = uyL+upperH, hyL = fyL+foreH;
+  const legLen = 150+(r-2.5)*60;
+  const thighH = legLen*.44, calfH = legLen*.36, ankleH = legLen*.08, footH = legLen*.12;
+  const legW = 30*f, legGap = 8;
+  const legY = hipY+hipH;
+  const tXl = 180-legW-legGap, tXr = 180+legGap;
+  const cx = 180, baseH = legY+legLen+6;
+  return {cx, headW, headH, headX, headY, neckH, neckW, neckX, neckY, shW, shH, shY, shX,
+    torsoW, torsoH, torsoX, torsoY, waistW, waistH, waistX, waistY, hipW, hipH, hipX, hipY,
+    armW, upperH, foreH, handH, handW, axL, axR, uyL, fyL, hyL,
+    legLen, thighH, calfH, ankleH, footH, legW, legGap, legY, tXl, tXr, baseH, t};
+}
+
+function rc(slotId, x, y, w, h, extra){
+  const s = SLOTS.find(o=>o.id===slotId);
+  return `<rect class="part z${s.zi}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3" data-slot="${slotId}"${extra||''}/>`;
+}
+function tx(x,y,str,cls){ return `<text class="part-label ${cls||''}" x="${x}" y="${y}">${str}</text>`; }
+
+function bodySVG(g, demo){
+  const parts = [];
+  /* 头·皮肤底（不可点，只作视觉） */
+  parts.push(`<rect x="${g.headX}" y="${g.headY}" width="${g.headW}" height="${g.headH}" rx="4" fill="#E8C39E" stroke="#33302B" stroke-width="1.5"/>`);
+  /* 头发 */
+  parts.push(rc('01', g.headX+8, g.headY-10, g.headW-16, 12));
+  parts.push(rc('01', g.headX-4, g.headY+14, 8, 30));
+  parts.push(rc('01', g.headX+g.headW-4, g.headY+14, 8, 30));
+  /* 头饰带 */
+  parts.push(rc('02', g.headX, g.headY, g.headW, 16));
+  /* 面罩区（先画，避免盖住眼睛） */
+  parts.push(rc('05', g.headX+12, g.headY+44, g.headW-24, 36));
+  /* 眼 */
+  parts.push(rc('03', g.headX+14, g.headY+42, 16, 12));
+  parts.push(rc('03', g.headX+g.headW-30, g.headY+42, 16, 12));
+  /* 耳 */
+  parts.push(rc('04', g.headX-7, g.headY+34, 7, 22));
+  parts.push(rc('04', g.headX+g.headW, g.headY+34, 7, 22));
+  /* 嘴 */
+  parts.push(rc('05', g.headX+18, g.headY+68, g.headW-36, 10));
+  /* 颈 / 背 / 肩 / 躯干 */
+  parts.push(rc('06', g.neckX, g.neckY, g.neckW, g.neckH));
+  parts.push(rc('09', g.torsoX-14, g.torsoY-10, g.torsoW+28, g.torsoH+18, ' opacity="0.5" stroke-dasharray="5 3"'));
+  parts.push(rc('07', g.axL-g.armW*0.55, g.shY-3, g.shW+g.armW*1.1, g.shH+8));
+  parts.push(rc('08', g.torsoX, g.torsoY, g.torsoW, g.torsoH));
+  parts.push(rc('10', g.waistX, g.waistY, g.waistW, g.waistH));
+  parts.push(rc('11', g.hipX, g.hipY, g.hipW, g.hipH));
+  /* 上肢 */
+  parts.push(rc('12', g.axL, g.uyL, g.armW, g.upperH));
+  parts.push(rc('12', g.axR, g.uyL, g.armW, g.upperH));
+  parts.push(rc('13', g.axL, g.fyL, g.armW, g.foreH));
+  parts.push(rc('13', g.axR, g.fyL, g.armW, g.foreH));
+  parts.push(rc('14', g.axL-2, g.hyL, g.handW, g.handH));
+  parts.push(rc('14', g.axR+g.armW-g.handW+2, g.hyL, g.handW, g.handH));
+  /* 武器（示意） */
+  parts.push(rc('15', g.axR+g.armW+6, g.fyL-4, 7, g.handH+g.foreH+14));
+  parts.push(rc('16', g.axL-16, g.hyL+2, 16, g.handH+16));
+  /* 下肢 */
+  parts.push(rc('17', g.tXl, g.legY, g.legW, g.thighH));
+  parts.push(rc('17', g.tXr, g.legY, g.legW, g.thighH));
+  parts.push(rc('18', g.tXl, g.legY+g.thighH, g.legW, g.calfH));
+  parts.push(rc('18', g.tXr, g.legY+g.thighH, g.legW, g.calfH));
+  parts.push(rc('19', g.tXl, g.legY+g.thighH+g.calfH, g.legW, g.ankleH));
+  parts.push(rc('19', g.tXr, g.legY+g.thighH+g.calfH, g.legW, g.ankleH));
+  parts.push(rc('20', g.tXl-3, g.legY+g.thighH+g.calfH+g.ankleH, g.legW+8, g.footH));
+  parts.push(rc('20', g.tXr-5, g.legY+g.thighH+g.calfH+g.ankleH, g.legW+8, g.footH));
+  /* 标签 */
+  const labels = [[g.cx, g.headY+30,'头'],[g.cx, g.torsoY+52,'躯干'],[g.axL-8, g.uyL+28,'臂'],[g.tXl+g.legW/2, g.legY+g.thighH+16,'腿']];
+  const inner = parts.join('') + labels.map(l=>tx(l[0],l[1],l[2])).join('');
+  return `<g transform="scale(1,${g.t})">${inner}</g>`;
+}
+
+/* ============ 交互状态 ============ */
+const state = {sel:'08', focus:null};
+const bodySvg = document.getElementById('bodySvg');
+const slotPanel = document.getElementById('slotPanel');
+const slot20 = document.getElementById('slot20');
+const zoneChips = document.getElementById('zoneChips');
+
+function renderBody(){
+  const g = geo({ratio:2.5, fat:1, tall:1});
+  let html = bodySVG(g);
+  /* 焦点调暗：focus 时非该区部位降透明度 */
+  if(state.focus){
+    const z = state.focus;
+    html = html.replace(/class="part z(\d)"/g, (m,zi)=>{
+      const s = SLOTS.find(o=>o.zi===+zi);
+      return s.zone===z ? m : `class="part z${zi} dim"`;
+    });
+  }
+  html = html.replace(/class="part z(\d)"/g, (m,zi)=>{
+    const s = SLOTS.find(o=>o.zi===+zi);
+    return s.id===state.sel ? `class="part z${zi} sel"` : m;
+  });
+  bodySvg.innerHTML = html;
+}
+bodySvg.addEventListener('click', e=>{
+  const r = e.target.closest('.part');
+  if(r && r.dataset.slot){ selectSlot(r.dataset.slot); }
+});
+
+function renderPanel(){
+  const s = SLOTS.find(o=>o.id===state.sel);
+  slotPanel.innerHTML = `
+    <span class="zone">${s.zone} · 装备槽 ${s.id}</span>
+    <h3><span class="no">${s.id}</span>${s.name}</h3>
+    <div class="parts">覆盖部位：${s.parts}</div>
+    <div class="desc">${s.desc}</div>
+    <div class="slot-items">${s.items.map(it=>`
+      <div class="slot-item"><span class="dot" style="background:${RARITY[it[1]].c}"></span><span class="nm">${it[0]}</span><span class="rv">${RARITY[it[1]].n}</span></div>`).join('')}
+    </div>`;
+}
+function selectSlot(id){
+  state.sel = id; renderBody(); renderPanel();
+  document.querySelectorAll('.slot-mini').forEach(c=>c.classList.toggle('active', c.dataset.id===id));
+}
+function renderSlot20(){
+  slot20.innerHTML = SLOTS.map(s=>`
+    <div class="slot-mini" data-id="${s.id}">
+      <b>${s.id} · ${s.name}</b>
+      <div class="parts">${s.parts}</div>
+      <div class="cnt">${s.items.length} 件装备</div>
+      <div class="zbar" style="background:${ZONES[s.zone]}"></div>
+    </div>`).join('');
+  slot20.querySelectorAll('.slot-mini').forEach(c=>c.addEventListener('click', ()=>selectSlot(c.dataset.id)));
+}
+function renderZoneChips(){
+  zoneChips.innerHTML = ZONE_KEYS.map(z=>`
+    <span class="zone-chip${state.focus===z?' active':''}" data-z="${z}"><i style="background:${ZONES[z]}"></i>${z}<small>（${SLOTS.filter(s=>s.zone===z).length}槽）</small></span>`).join('');
+  zoneChips.querySelectorAll('.zone-chip').forEach(c=>c.addEventListener('click', ()=>{
+    state.focus = (state.focus===c.dataset.z) ? null : c.dataset.z;
+    renderZoneChips(); renderBody();
+  }));
+}
+
+/* ============ 体型模拟器 ============ */
+const demo = {ratio:2.5, fat:1, tall:1};
+const demoSvg = document.getElementById('demoSvg');
+const demoMap = [
+  ['ratio','slRatio','outRatio', v=>v.toFixed(1)],
+  ['fat','slBody','outBody', v=> v<0.9?'纤细':(v<1.15?'标准':(v<1.35?'圆润':'壮硕'))],
+  ['tall','slTall','outTall', v=>Math.round(v*100)+'%']
+];
+function renderDemo(){
+  const g = geo(demo);
+  const parts = [];
+  parts.push(`<rect x="${g.headX+8}" y="${g.headY-10}" width="${g.headW-16}" height="12" rx="3" fill="#8C5A2B"/>`);
+  parts.push(`<rect x="${g.headX}" y="${g.headY}" width="${g.headW}" height="${g.headH}" rx="4" fill="#E8C39E" stroke="#33302B"/>`);
+  parts.push(`<rect x="${g.neckX}" y="${g.neckY}" width="${g.neckW}" height="${g.neckH}" fill="#E8C39E" stroke="#33302B"/>`);
+  parts.push(`<rect x="${g.shX}" y="${g.shY}" width="${g.shW}" height="${g.shH}" rx="3" fill="#C3482C"/>`);
+  parts.push(`<rect x="${g.torsoX}" y="${g.torsoY}" width="${g.torsoW}" height="${g.torsoH}" rx="4" fill="#C3482C" stroke="#33302B"/>`);
+  parts.push(`<rect x="${g.waistX}" y="${g.waistY}" width="${g.waistW}" height="${g.waistH}" rx="3" fill="#8C5A2B"/>`);
+  parts.push(`<rect x="${g.hipX}" y="${g.hipY}" width="${g.hipW}" height="${g.hipH}" rx="4" fill="#2E4658" stroke="#33302B"/>`);
+  [[g.axL,g.uyL],[g.axR,g.uyL],[g.axL,g.fyL],[g.axR,g.fyL]].forEach(([x,y])=>
+    parts.push(`<rect x="${x}" y="${y}" width="${g.armW}" height="${y===g.uyL?g.upperH:g.foreH}" rx="3" fill="#C3482C"/>`));
+  parts.push(`<rect x="${g.tXl}" y="${g.legY}" width="${g.legW}" height="${g.thighH}" rx="3" fill="#2E4658"/>`);
+  parts.push(`<rect x="${g.tXr}" y="${g.legY}" width="${g.legW}" height="${g.thighH}" rx="3" fill="#2E4658"/>`);
+  parts.push(`<rect x="${g.tXl}" y="${g.legY+g.thighH}" width="${g.legW}" height="${g.calfH}" rx="3" fill="#2E4658"/>`);
+  parts.push(`<rect x="${g.tXr}" y="${g.legY+g.thighH}" width="${g.legW}" height="${g.calfH}" rx="3" fill="#2E4658"/>`);
+  parts.push(`<rect x="${g.tXl-3}" y="${g.legY+g.thighH+g.calfH+g.ankleH}" width="${g.legW+8}" height="${g.footH}" rx="3" fill="#8C5A2B"/>`);
+  parts.push(`<rect x="${g.tXr-5}" y="${g.legY+g.thighH+g.calfH+g.ankleH}" width="${g.legW+8}" height="${g.footH}" rx="3" fill="#8C5A2B"/>`);
+  demoSvg.innerHTML = `<g transform="translate(8,6) scale(0.72,0.72)">${parts.join('')}</g>`;
+  const g2 = geo({ratio:demo.ratio, fat:demo.fat, tall:1});
+  demoSvg.setAttribute('viewBox', `0 0 300 ${Math.min(520, g2.baseH*1.06+40)}`);
+}
+demoMap.forEach(([k,elId,outId,fmt])=>{
+  const el = document.getElementById(elId);
+  const out = document.getElementById(outId);
+  el.addEventListener('input', ()=>{
+    demo[k] = parseFloat(el.value);
+    out.textContent = fmt(demo[k]);
+    renderDemo();
+  });
+});
+
+/* ============ 装备图鉴 ============ */
+const catState = {zone:'all', rarity:0};
+const gearBlocks = document.getElementById('gearBlocks');
+function renderCatalog(){
+  const list = SLOTS.filter(s=>catState.zone==='all' || s.zone===catState.zone);
+  gearBlocks.innerHTML = list.map(s=>{
+    const items = catState.rarity===0 ? s.items : s.items.filter(it=>it[1]===catState.rarity);
+    if(!items.length) return '';
+    return `<div class="gear-block" id="gb-${s.id}" data-z="${s.zone}">
+      <div class="gear-head">
+        <span class="gear-no" style="background:${ZONES[s.zone]}">${s.id}</span>
+        <div><span class="nm">${s.name}</span><span class="parts"> · ${s.parts}</span></div>
+        <span class="cnt">${items.length} 件</span>
+      </div>
+      <div class="gear-items">${items.map(it=>`
+        <div class="gear-item">
+          <div class="g-top"><span class="dot" style="background:${RARITY[it[1]].c}"></span><span class="nm">${it[0]}</span><span class="rv" style="background:${RARITY[it[1]].c}">${RARITY[it[1]].n}</span></div>
+          <div class="desc">${it[2]}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('catToolbar').querySelectorAll('.cat-tab').forEach(b=>b.addEventListener('click', ()=>{
+  catState.zone = b.dataset.zone;
+  document.querySelectorAll('.cat-tab').forEach(x=>x.classList.toggle('active', x===b));
+  renderCatalog();
+}));
+document.getElementById('rarityFilter').addEventListener('change', e=>{
+  catState.rarity = parseInt(e.target.value,10);
+  renderCatalog();
+});
+
+/* ============ 初始化 ============ */
+renderBody(); renderPanel(); renderSlot20(); renderZoneChips(); renderDemo(); renderCatalog();
+</script>
+</body>
+</html>

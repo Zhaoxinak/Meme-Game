@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>套装立绘出图器 · 积木角色确定性渲染</title>
+<style>
+  :root{
+    --paper:#F4EFE6; --ink:#2E3A44; --sub:#7A8570; --line:#E2DAC9;
+    --accent:#B5532E; --card:#FFFDF8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;min-height:100vh}
+  header{display:flex;align-items:baseline;gap:14px;padding:16px 22px 10px;border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;font-weight:700;letter-spacing:.5px}
+  header .sub{font-size:12px;color:var(--sub)}
+  header .badge{margin-left:auto;font-size:11px;color:#8a6d3b;background:#faf3e0;border:1px solid #e8d9b5;padding:3px 10px;border-radius:999px}
+  .app{display:grid;grid-template-columns:300px 1fr;gap:0;height:calc(100vh - 57px)}
+  .panel{background:var(--card);border-right:1px solid var(--line);padding:16px 18px;overflow-y:auto}
+  .panel h2{font-size:13px;color:var(--sub);font-weight:600;margin:18px 0 8px;letter-spacing:1px}
+  .panel h2:first-child{margin-top:0}
+  .suits{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .suit-btn{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 6px;cursor:pointer;text-align:center;transition:.15s;font-size:12px;line-height:1.35}
+  .suit-btn .dot{display:block;width:26px;height:26px;border-radius:8px;margin:0 auto 5px;border:1px solid rgba(0,0,0,.08)}
+  .suit-btn:hover{border-color:#c9bda5}
+  .suit-btn.active{border-color:var(--accent);background:#fdf4ec;box-shadow:0 0 0 1px var(--accent) inset}
+  .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px}
+  .row label{color:#4a5560}
+  .row input[type=range]{width:150px;accent-color:var(--accent)}
+  .row .val{width:34px;text-align:right;color:var(--sub);font-variant-numeric:tabular-nums;font-size:12px}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:6px 0;font-size:12px;cursor:pointer}
+  .seg button.active{background:#2E3A44;color:#fff;border-color:#2E3A44}
+  .export-btn{width:100%;margin-top:16px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;padding:13px 0;border-radius:12px;cursor:pointer;transition:.15s;letter-spacing:1px}
+  .export-btn:hover{filter:brightness(1.07)}
+  .export-btn:active{transform:translateY(1px)}
+  .hint{font-size:11px;color:var(--sub);margin-top:10px;line-height:1.6}
+  .stage{background:#EDE6D8;position:relative;display:flex;align-items:center;justify-content:center;padding:20px}
+  .frame{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(60,50,30,.18);overflow:hidden;position:relative}
+  #view{display:block}
+  #exporting{position:absolute;inset:0;background:rgba(244,239,230,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:14px;color:var(--ink);z-index:5;border-radius:14px}
+  #exporting .spin{width:34px;height:34px;border:3px solid #d8cdb8;border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (max-width:820px){
+    .app{grid-template-columns:1fr;height:auto;overflow:visible}
+    .panel{order:2;border-right:none;border-top:1px solid var(--line)}
+    .stage{order:1;min-height:70vh}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>套装立绘出图器</h1>
+  <span class="sub">积木像素 Q 版 · 确定性渲染 · 与六套装概念图同规格</span>
+  <span class="badge">输出 1638×2048 PNG</span>
+</header>
+<div class="app">
+  <aside class="panel">
+    <h2>预设套装</h2>
+    <div class="suits" id="suitGrid"></div>
+
+    <h2>角色参数</h2>
+    <div class="row"><label>性别</label><div class="seg" id="genderSeg">
+      <button data-g="男" class="active">男</button><button data-g="女">女</button>
+    </div></div>
+    <div class="row"><label>身高</label><input type="range" id="hRange" min="70" max="140" value="100"><span class="val" id="hVal">1.00</span></div>
+    <div class="row"><label>胖瘦</label><input type="range" id="fRange" min="60" max="160" value="100"><span class="val" id="fVal">1.00</span></div>
+    <div class="row"><label>头大小</label><input type="range" id="sRange" min="80" max="130" value="105"><span class="val" id="sVal">1.05</span></div>
+
+    <button class="export-btn" id="exportBtn">导出套装立绘 PNG</button>
+    <div class="hint">相机、背景、留白全部固定（角色占画面约 76%，头顶/脚底各留 12%），同一参数每次导出结果逐像素一致。导出的图片尺寸 1638×2048，与设计文档六套装概念图同规格。</div>
+  </aside>
+  <main class="stage">
+    <div class="frame">
+      <canvas id="view"></canvas>
+      <div id="exporting"><div class="spin"></div>正在渲染 1638×2048 立绘…</div>
+    </div>
+  </main>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/RoundedBoxGeometry.js"></script>
+<script src="vendor/RoomEnvironment.js"></script>
+<script>
+/* ============ 状态 ============ */
+const SUITS = [
+  { id:'sanguo', name:'三国 · 卧龙扇', bg:['#F3E9D2','#D9E4C8'], accent:'#6B7D3A', parts:'sanguo' },
+  { id:'tang',   name:'唐 · 红装雪氅', bg:['#F3E9D2','#E8D5C0'], accent:'#B03A2E', parts:'tang' },
+  { id:'song',   name:'宋 · 青衫赴考', bg:['#F3E9D2','#D6DEE8'], accent:'#3F5E7A', parts:'song' },
+  { id:'ming',   name:'明 · 红氅藏锋', bg:['#F3E9D2','#E3D2C4'], accent:'#8C3B2E', parts:'ming' },
+  { id:'modern', name:'现代 · 穿越客', bg:['#F3E9D2','#CDE0EC'], accent:'#2E4658', parts:'modern' },
+  { id:'rabbit', name:'萌宠 · 兔兔侠', bg:['#F3E9D2','#EBCFDE'], accent:'#C98AA8', parts:'rabbit' }
+];
+const P = { gender:'男', height:1.0, fat:1.0, head:1.05, suit:0, skin:0xE8B98F };
+
+/* 材质工具：每块一个独立材质实例，避免共享 */
+const C = {
+  skin:0xF0C8A0, skinF:0xE8B488, hair:0x5B3A29, hairL:0x8A5A33,
+  white:0xFDFBF4, black:0x2B2F36, red:0xB8482F, blue:0x2E4658, deepBlue:0x24384A,
+  green:0x6B7D3A, qing:0x4E7A63, gold:0xC9A227, brown:0x7A4A2B, pink:0xE9AEC6,
+  pinkL:0xF4CEDD, orange:0xC96A2E, gray:0x8C9298, purple:0x7A5A8C, belt:0x6E4632
+};
+function mat(color, rough, metal){ return new THREE.MeshStandardMaterial({ color, roughness: rough===undefined?0.42:rough, metalness: metal===undefined?0.04:metal }); }
+function box(w,h,d,color,x,y,z,rough,metal,parent){
+  const r = Math.max(0.03, Math.min(w,h,d)*0.15);
+  const m = new THREE.Mesh(new THREE.RoundedBoxGeometry(w,h,d,4,r), mat(color,rough,metal));
+  m.position.set(x||0,y||0,z||0);
+  m.castShadow = true; m.receiveShadow = true;
+  (parent||scene).add(m);
+  return m;
+}
+function sph(r,color,x,y,z,parent,metal){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r,18,16), mat(color,0.35,metal===undefined?0.1:metal));
+  m.position.set(x||0,y||0,z||0);
+  m.castShadow = true; m.receiveShadow = true;
+  (parent||scene).add(m);
+  return m;
+}
+
+/* ============ 场景 / 灯光 / 相机 / 背景 ============ */
+let renderer, scene, camera, charGroup, bgMesh, ground;
+const EXPORT_W = 1638, EXPORT_H = 2048;
+function initScene(){
+  renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true, alpha:false });
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  const cv = document.getElementById('view');
+  cv.parentNode.insertBefore(renderer.domElement, cv);
+  cv.remove();
+
+  scene = new THREE.Scene();
+
+  /* IBL 环境光：让积木获得柔和光泽 */
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.06).texture;
+  scene.environmentIntensity = 0.85;
+
+  /* 灯光：半球 + 主光 + 补光 + 轮廓光 + 顶光 */
+  const hemi = new THREE.HemisphereLight(0xFFF6E8, 0xC9BFA8, 0.42);
+  scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xFFF1DC, 0.95);
+  key.position.set(3.2, 5.6, 4.2);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048,2048);
+  key.shadow.camera.near = 0.5; key.shadow.camera.far = 25;
+  key.shadow.camera.left=-5; key.shadow.camera.right=5; key.shadow.camera.top=6; key.shadow.camera.bottom=-6;
+  key.shadow.bias = -0.0006;
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xE8F0FF, 0.32);
+  fill.position.set(-3.5, 1.5, 3.0);
+  scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xC9E8FF, 0.5);
+  rim.position.set(0, 3.5, -5);
+  scene.add(rim);
+  const top = new THREE.DirectionalLight(0xFFFFFF, 0.18);
+  top.position.set(0, 6, 0);
+  scene.add(top);
+
+  /* 脚下淡阴影 */
+  ground = new THREE.Mesh(
+    new THREE.CircleGeometry(1.9,64),
+    new THREE.ShadowMaterial({ opacity:0.16 })
+  );
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  /* 背景：径向渐变 CanvasTexture 平面 */
+  bgMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(24,30),
+    new THREE.MeshBasicMaterial({ map:null, depthWrite:false, fog:false })
+  );
+  bgMesh.position.set(0,0,-9);
+  scene.add(bgMesh);
+
+  /* 正交相机：每帧按角色 bbox 适配留白 */
+  camera = new THREE.OrthographicCamera(-4,4,4,-4,0.1,60);
+  camera.position.set(0,0.6,20);
+  camera.lookAt(0,0.6,0);
+
+  charGroup = new THREE.Group();
+  scene.add(charGroup);
+}
+function makeBgGradient(c1,c2){
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 640;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0,0,0,640);
+  g.addColorStop(0,c1); g.addColorStop(1,c2);
+  ctx.fillStyle = g; ctx.fillRect(0,0,512,640);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.encoding = THREE.sRGBEncoding;
+  bgMesh.material.map = tex;
+  bgMesh.material.needsUpdate = true;
+}
+
+/* ============ 角色骨架 ============ */
+let parts = [];
+function clearChar(){
+  while(charGroup.children.length) charGroup.remove(charGroup.children[0]);
+  parts = [];
+}
+function block(w,h,d,color,x,y,z,rough){
+  const m = box(w,h,d,color,x,y,z,rough,undefined,charGroup);
+  m.castShadow = true; m.receiveShadow = true;
+  parts.push(m);
+  return m;
+}
+function makeBody(){
+  const f = P.fat, hs = P.head, hy = P.height;
+  /* 头：方头 Q 版 */
+  const hw = 1.02*hs, hh = 1.02*hs, hd = 0.94*hs;
+  const headY = 2.02*hy;
+  block(hw,hh,hd,C.skin,0,headY,0,0.5);
+  /* 身体 */
+  const bw = 0.62*f, bh = 0.92, bd = 0.5*f;
+  const bodyY = headY - hh/2 - bh/2 - 0.04;
+  block(bw,bh,bd,C.blue,0,bodyY,0,0.5);
+  /* 双臂 */
+  const aw = 0.2*f, ah = 0.82, ad = 0.2*f;
+  const ax = bw/2 + aw/2 + 0.02, ay = bodyY + bh*0.16;
+  block(aw,ah,ad,C.skin, ax,ay,0,0.55);
+  block(aw,ah,ad,C.skin,-ax,ay,0,0.55);
+  /* 双手 */
+  const hw2 = 0.24*f;
+  block(hw2,hw2*0.9,hw2,C.skin, ax, ay-ah/2-hw2*0.45-0.01,0,0.5);
+  block(hw2,hw2*0.9,hw2,C.skin,-ax, ay-ah/2-hw2*0.45-0.01,0,0.5);
+  /* 双腿 */
+  const lw = 0.26*f, lh = 0.66*hy, ld = 0.26*f;
+  const legY = bodyY - bh/2 - lh/2 - 0.03;
+  block(lw,lh,ld,C.deepBlue, lw*0.55, legY, 0, 0.6);
+  block(lw,lh,ld,C.deepBlue,-lw*0.55, legY, 0, 0.6);
+  /* 双脚 */
+  const fw2 = 0.34*f, fh2 = 0.16, fd2 = 0.58;
+  const footY = legY - lh/2 - fh2/2;
+  block(fw2,fh2,fd2,C.brown, lw*0.55+0.03, footY, 0.05, 0.4);
+  block(fw2,fh2,fd2,C.brown,-lw*0.55-0.03, footY, 0.05, 0.4);
+  return { headY, hh, bodyY, bh, legY, lh, footY, ax, ay };
+}
+
+/* ============ 六套装部件 ============ */
+function gear_sanguo(B){
+  /* 纶巾束发：头顶青绿头巾 + 后飘带 */
+  block(0.9,0.3,0.92,C.qing,0,B.headY+B.hh/2-0.12,0,0.5);
+  block(0.5,0.42,0.5,C.qing,0,B.headY+B.hh/2+0.05,0,0.5);
+  block(0.26,0.5,0.26,C.qing,0,B.headY+B.hh/2+0.28,-0.12,0.5);
+  /* 圆框眼镜 */
+  box(0.02,0.16,0.02,C.gold,0,B.headY-0.08,0.47,0.5,undefined,charGroup);
+  block(0.24,0.16,0.03,C.gold, 0.3,B.headY-0.08,0.45,0.6);
+  block(0.24,0.16,0.03,C.gold,-0.3,B.headY-0.08,0.45,0.6);
+  /* 上装青绿交领 */
+  block(0.66,0.92,0.55,C.qing,0,B.bodyY,0,0.5);
+  block(0.4,0.34,0.06,C.white,0,B.bodyY+0.3,0.28,0.5);
+  /* 黑披风 */
+  block(0.74,0.98,0.14,C.black,0,B.bodyY-0.03,-0.3,0.5);
+  block(0.6,0.4,0.1,C.black,0,B.bodyY-0.5,-0.34,0.5);
+  /* 白羽扇（右手举起） */
+  const hx = B.ax;
+  block(0.1,0.5,0.1,C.white, hx+0.05,B.ay+0.62,0.28,0.5);
+  block(0.44,0.3,0.05,C.white, hx+0.05,B.ay+0.78,0.32,0.4);
+  /* 竹简（左手垂持） */
+  block(0.16,0.44,0.16,C.brown, -hx-0.06,B.ay-0.28,0.24,0.4);
+  /* 布鞋（黑） */
+  block(0.34,0.16,0.58,C.black, 0.17,B.footY,0.05,0.4);
+  block(0.34,0.16,0.58,C.black,-0.17,B.footY,0.05,0.4);
+}
+function gear_tang(B){
+  /* 垂云高髻 + 高装巾帽 */
+  block(0.72,0.3,0.72,C.hair,0,B.headY+B.hh/2-0.08,0,0.5);
+  block(0.46,0.34,0.46,C.hairL,0,B.headY+B.hh/2+0.08,0,0.5);
+  block(0.3,0.4,0.3,C.hairL,0,B.headY+B.hh/2+0.26,0.04,0.5);
+  block(0.5,0.16,0.5,C.red,0,B.headY+B.hh/2+0.34,0,0.5);
+  /* 上装赤色圆领袍 */
+  block(0.66,0.92,0.55,C.red,0,B.bodyY,0,0.5);
+  block(0.3,0.2,0.06,C.white,0,B.bodyY+0.34,0.28,0.5);
+  /* 白绒披风 */
+  block(0.76,1.0,0.12,C.white,0,B.bodyY-0.04,-0.3,0.5);
+  block(0.6,0.46,0.1,C.white,0,B.bodyY-0.52,-0.34,0.5);
+  /* 玉带 */
+  block(0.68,0.12,0.58,C.gold,0,B.bodyY-0.2,0,0.4);
+  /* 如意（右手） */
+  const hx = B.ax;
+  block(0.12,0.52,0.12,C.gold, hx+0.04,B.ay+0.5,0.26,0.5);
+  sph(0.09,C.gold,hx+0.04,B.ay+0.78,0.26,charGroup);
+  /* 绣花鞋（红） */
+  block(0.34,0.15,0.58,C.red, 0.17,B.footY,0.05,0.4);
+  block(0.34,0.15,0.58,C.red,-0.17,B.footY,0.05,0.4);
+}
+function gear_song(B){
+  /* 乌纱帽 + 双翅 */
+  block(0.82,0.3,0.82,C.black,0,B.headY+B.hh/2-0.06,0,0.5);
+  block(0.5,0.16,0.5,C.black,0,B.headY+B.hh/2+0.12,0,0.5);
+  block(0.7,0.06,0.1,C.black,0,B.headY+B.hh/2+0.1,0.5,0.4);
+  block(0.7,0.06,0.1,C.black,0,B.headY+B.hh/2+0.1,-0.5,0.4);
+  /* 圆框眼镜 */
+  block(0.22,0.15,0.03,C.gold, 0.3,B.headY-0.06,0.45,0.6);
+  block(0.22,0.15,0.03,C.gold,-0.3,B.headY-0.06,0.45,0.6);
+  /* 深蓝交领 */
+  block(0.66,0.92,0.55,C.deepBlue,0,B.bodyY,0,0.5);
+  block(0.38,0.3,0.06,C.white,0,B.bodyY+0.3,0.28,0.5);
+  /* 青绿披风 */
+  block(0.74,0.98,0.13,C.qing,0,B.bodyY-0.03,-0.3,0.5);
+  block(0.58,0.42,0.1,C.qing,0,B.bodyY-0.5,-0.34,0.5);
+  /* 折扇（右） */
+  const hx = B.ax;
+  block(0.4,0.26,0.08,C.gold, hx+0.03,B.ay+0.34,0.3,0.4);
+  block(0.3,0.18,0.06,C.green, hx+0.03,B.ay+0.3,0.32,0.4);
+  /* 线装书（左） */
+  block(0.2,0.3,0.12,C.white, -hx-0.05,B.ay+0.1,0.22,0.4);
+  block(0.22,0.32,0.14,C.brown, -hx-0.05,B.ay+0.1,0.22,0.4);
+  /* 布鞋 */
+  block(0.34,0.15,0.58,C.gray, 0.17,B.footY,0.05,0.4);
+  block(0.34,0.15,0.58,C.gray,-0.17,B.footY,0.05,0.4);
+}
+function gear_ming(B){
+  /* 乌纱帽 */
+  block(0.84,0.28,0.84,C.black,0,B.headY+B.hh/2-0.06,0,0.5);
+  block(0.52,0.14,0.52,C.black,0,B.headY+B.hh/2+0.1,0,0.5);
+  /* 墨镜 */
+  block(0.28,0.16,0.06,C.black,0,B.headY-0.04,0.46,0.4);
+  /* 藏青锦袍 */
+  block(0.66,0.92,0.55,C.deepBlue,0,B.bodyY,0,0.5);
+  block(0.3,0.34,0.05,C.gold,0,B.bodyY+0.28,0.29,0.5);
+  /* 红披风 */
+  block(0.76,1.0,0.13,C.red,0,B.bodyY-0.04,-0.3,0.5);
+  block(0.6,0.44,0.1,C.red,0,B.bodyY-0.5,-0.34,0.5);
+  /* 虎纹腰带 */
+  block(0.68,0.14,0.58,C.belt,0,B.bodyY-0.2,0,0.4);
+  block(0.2,0.14,0.6,C.gold,0.22,B.bodyY-0.2,0,0.4);
+  /* 唐横刀（右手持） */
+  const hx = B.ax;
+  block(0.1,0.7,0.1,C.red, hx+0.02,B.ay+0.16,0.3,0.4);
+  block(0.08,0.16,0.08,C.gold, hx+0.02,B.ay-0.22,0.3,0.4);
+  block(0.06,0.5,0.06,C.gray, hx+0.02,B.ay+0.42,0.3,0.3);
+  /* 平安符（左） */
+  block(0.14,0.2,0.05,C.red, -hx-0.02,B.ay-0.16,0.26,0.4);
+  block(0.14,0.08,0.05,C.gold, -hx-0.02,B.ay-0.3,0.26,0.4);
+  /* 官靴 */
+  block(0.34,0.17,0.6,C.black, 0.17,B.footY,0.05,0.3);
+  block(0.34,0.17,0.6,C.black,-0.17,B.footY,0.05,0.3);
+}
+function gear_modern(B){
+  /* 爆炸头 */
+  block(0.96,0.3,0.9,C.hairL,0,B.headY+B.hh/2-0.05,0,0.5);
+  block(1.08,0.24,0.96,C.hair,0,B.headY+B.hh/2-0.2,0,0.5);
+  block(0.5,0.2,0.5,C.hair,0,B.headY+B.hh/2+0.12,0.1,0.5);
+  block(0.34,0.2,0.34,C.hair, 0.4,B.headY+B.hh/2+0.06,0.16,0.5);
+  block(0.34,0.2,0.34,C.hair,-0.4,B.headY+B.hh/2+0.06,0.16,0.5);
+  /* 棒球帽 */
+  block(0.86,0.12,0.8,C.deepBlue,0,B.headY+B.hh/2+0.06,0,0.5);
+  block(0.7,0.06,0.62,C.deepBlue,0,B.headY+B.hh/2+0.14,0,0.5);
+  block(0.22,0.06,0.22,C.white,0.12,B.headY+B.hh/2+0.14,0.3,0.5);
+  /* 墨镜 */
+  block(0.3,0.15,0.05,C.black,0,B.headY-0.05,0.46,0.4);
+  /* 头戴耳机 */
+  block(0.92,0.14,0.5,C.red,0,B.headY+0.1,0,0.5);
+  block(0.14,0.28,0.2,C.red, 0.52,B.headY+0.02,0,0.5);
+  block(0.14,0.28,0.2,C.red,-0.52,B.headY+0.02,0,0.5);
+  /* 连帽卫衣 */
+  block(0.66,0.92,0.55,C.deepBlue,0,B.bodyY,0,0.5);
+  block(0.24,0.3,0.07,C.white,0,B.bodyY+0.32,0.28,0.5);
+  /* 白手套 + 自拍杆 */
+  const hx = B.ax;
+  block(0.26,0.24,0.26,C.white, hx,B.ay-ahH(),0,0.5);
+  block(0.26,0.24,0.26,C.white,-hx,B.ay-ahH(),0,0.5);
+  block(0.07,0.9,0.07,C.gray, hx+0.05,B.ay+0.55,0.3,0.4);
+  block(0.34,0.2,0.06,C.black, hx+0.05,B.ay+1.02,0.3,0.4);
+  block(0.2,0.1,0.04,C.white, hx+0.05,B.ay+1.0,0.32,0.5);
+  /* 运动鞋 */
+  block(0.36,0.17,0.6,C.white, 0.17,B.footY,0.05,0.4);
+  block(0.36,0.07,0.6,C.red, 0.17,B.footY-0.12,0.05,0.4);
+  block(0.36,0.17,0.6,C.white,-0.17,B.footY,0.05,0.4);
+  block(0.36,0.07,0.6,C.red,-0.17,B.footY-0.12,0.05,0.4);
+}
+function ahH(){ return 0.24*0.9/2+0.01; }
+function gear_rabbit(B){
+  /* 兔耳兜帽：粉白帽 + 双兔耳 */
+  block(0.9,0.34,0.88,C.pinkL,0,B.headY+B.hh/2-0.06,0,0.5);
+  block(0.8,0.12,0.76,C.white,0,B.headY+B.hh/2+0.12,0,0.5);
+  block(0.2,0.62,0.18,C.pinkL, 0.3,B.headY+B.hh/2+0.38,0.04,0.5);
+  block(0.16,0.62,0.14,C.pink, 0.3,B.headY+B.hh/2+0.38,0.05,0.5);
+  block(0.2,0.62,0.18,C.pinkL,-0.3,B.headY+B.hh/2+0.38,0.04,0.5);
+  block(0.16,0.62,0.14,C.pink,-0.3,B.headY+B.hh/2+0.38,0.05,0.5);
+  /* 铃铛耳坠（金） */
+  sph(0.09,C.gold, 0.52,B.headY-0.12,0.16,charGroup);
+  sph(0.09,C.gold,-0.52,B.headY-0.12,0.16,charGroup);
+  /* 腮红 */
+  block(0.16,0.1,0.04,C.pink, 0.32,B.headY-0.22,0.46,0.4);
+  block(0.16,0.1,0.04,C.pink,-0.32,B.headY-0.22,0.46,0.4);
+  /* 粉色项圈 + 金铃铛 */
+  block(0.6,0.1,0.54,C.pink,0,B.bodyY+0.4,0.02,0.5);
+  sph(0.08,C.gold,0,B.bodyY+0.33,0.28,charGroup);
+  /* 肚兜：白色 + 粉圆 */
+  block(0.56,0.52,0.14,C.white,0,B.bodyY+0.16,0.26,0.5);
+  block(0.2,0.2,0.06,C.pinkL,0,B.bodyY+0.16,0.33,0.5);
+  /* 粉色短裤 */
+  block(0.6,0.34,0.5,C.pink,0,B.bodyY-0.36,0,0.5);
+  /* 小翅膀 */
+  block(0.3,0.26,0.08,C.white, 0.34,B.bodyY+0.2,-0.24,0.5);
+  block(0.24,0.2,0.07,C.white, 0.42,B.bodyY+0.34,-0.22,0.5);
+  block(0.3,0.26,0.08,C.white,-0.34,B.bodyY+0.2,-0.24,0.5);
+  block(0.24,0.2,0.07,C.white,-0.42,B.bodyY+0.34,-0.22,0.5);
+  /* 毛绒爪手套 */
+  const hx = B.ax;
+  block(0.28,0.26,0.28,C.white, hx,B.ay-ahH(),0,0.5);
+  block(0.28,0.26,0.28,C.white,-hx,B.ay-ahH(),0,0.5);
+  block(0.12,0.08,0.12,C.pink, hx+0.07,B.ay-ahH()+0.14,0,0.5);
+  block(0.12,0.08,0.12,C.pink,-hx+0.07,B.ay-ahH()+0.14,0,0.5);
+  /* 毛绒拖鞋（粉白兔脸） */
+  block(0.36,0.15,0.6,C.pinkL, 0.17,B.footY,0.05,0.5);
+  block(0.18,0.1,0.16,C.pink, 0.27,B.footY+0.04,0.28,0.5);
+  block(0.36,0.15,0.6,C.pinkL,-0.17,B.footY,0.05,0.5);
+  block(0.18,0.1,0.16,C.pink,-0.27,B.footY+0.04,0.28,0.5);
+}
+const GEAR_FN = { sanguo:gear_sanguo, tang:gear_tang, song:gear_song, ming:gear_ming, modern:gear_modern, rabbit:gear_rabbit };
+
+/* 五官 */
+function makeFace(B){
+  const fwd = 0.46;
+  /* 眼睛（白底+黑瞳+高光） */
+  block(0.22,0.18,0.04,C.white, 0.26,B.headY+0.02,fwd,0.4);
+  block(0.22,0.18,0.04,C.white,-0.26,B.headY+0.02,fwd,0.4);
+  block(0.12,0.14,0.05,C.black, 0.26,B.headY+0.02,fwd+0.02,0.3);
+  block(0.12,0.14,0.05,C.black,-0.26,B.headY+0.02,fwd+0.02,0.3);
+  block(0.05,0.05,0.04,C.white, 0.29,B.headY+0.05,fwd+0.04,0.5);
+  block(0.05,0.05,0.04,C.white,-0.23,B.headY+0.05,fwd+0.04,0.5);
+  /* 眉毛 */
+  block(0.24,0.06,0.04,C.hair, 0.26,B.headY+0.16,fwd,0.5);
+  block(0.24,0.06,0.04,C.hair,-0.26,B.headY+0.16,fwd,0.5);
+  /* 鼻子 */
+  block(0.08,0.08,0.04,C.skinF, 0,B.headY-0.07,fwd+0.02,0.4);
+  /* 嘴 */
+  block(0.16,0.06,0.03,C.brown, 0,B.headY-0.16,fwd,0.5);
+}
+
+/* ============ 相机适配（确定性留白） ============ */
+const TOP_GAP = 0.12, BOT_GAP = 0.12, FIT = 1-TOP_GAP-BOT_GAP;
+function frameCamera(){
+  const box3 = new THREE.Box3().setFromObject(charGroup);
+  const size = box3.getSize(new THREE.Vector3());
+  const center = box3.getCenter(new THREE.Vector3());
+  const fitH = size.y / FIT;           /* 角色占画面 76% */
+  const halfW = fitH*0.8/2;            /* 0.8 画幅 */
+  camera.left = -halfW; camera.right = halfW;
+  camera.top = fitH/2; camera.bottom = -fitH/2;
+  camera.updateProjectionMatrix();
+  /* 角色 bbox 垂直中心对齐画面中心 y=0，水平居中 */
+  charGroup.position.y = -center.y;
+  charGroup.position.x = -center.x;
+  /* 地面阴影贴角色脚底 */
+  ground.position.y = -size.y/2 - 0.14;
+}
+
+/* ============ 渲染 ============ */
+function renderFrame(){ renderer.render(scene, camera); }
+function loop(){ renderFrame(); requestAnimationFrame(loop); }
+
+/* ============ UI ============ */
+const grid = document.getElementById('suitGrid');
+SUITS.forEach((s,i)=>{
+  const b = document.createElement('button');
+  b.className = 'suit-btn' + (i===P.suit?' active':'');
+  b.innerHTML = '<span class="dot" style="background:linear-gradient(135deg,'+s.bg[0]+','+s.bg[1]+')"></span>'+s.name;
+  b.onclick = ()=>{ P.suit = i; rebuild(); };
+  grid.appendChild(b);
+});
+document.getElementById('genderSeg').querySelectorAll('button').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.getElementById('genderSeg').querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    P.gender = btn.dataset.g; rebuild();
+  };
+});
+function bindRange(id,valId,key,fmt){
+  const el = document.getElementById(id), v = document.getElementById(valId);
+  el.oninput = ()=>{ P[key] = parseInt(el.value)/100; v.textContent = fmt?fmt(P[key]):P[key].toFixed(2); rebuild(); };
+}
+bindRange('hRange','hVal','height');
+bindRange('fRange','fVal','fat');
+bindRange('sRange','sVal','head',v=>v.toFixed(2));
+
+/* 预览尺寸 */
+function resizePreview(){
+  const stage = document.querySelector('.stage');
+  const w = Math.min(stage.clientWidth-40, (stage.clientHeight-40)*0.8, 760);
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(Math.round(w), Math.round(w/0.8));
+}
+window.addEventListener('resize', ()=>{ resizePreview(); renderFrame(); });
+
+/* ============ 重建 ============ */
+function rebuild(){
+  clearChar();
+  const B = makeBody();
+  if(P.gender==='女'){
+    block(0.16,0.1,0.04,C.pink, 0.32,B.headY-0.22,0.46,0.4);
+    block(0.16,0.1,0.04,C.pink,-0.32,B.headY-0.22,0.46,0.4);
+  }
+  makeFace(B);
+  GEAR_FN[SUITS[P.suit].parts](B);
+  frameCamera();
+  renderFrame();
+}
+
+/* ============ 导出 PNG（1638×2048） ============ */
+document.getElementById('exportBtn').onclick = ()=>{
+  const ov = document.getElementById('exporting');
+  ov.style.display = 'flex';
+  setTimeout(()=>{
+    try{
+      const oldW = renderer.domElement.width, oldH = renderer.domElement.height;
+      renderer.setPixelRatio(1);
+      renderer.setSize(EXPORT_W, EXPORT_H, false);
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'suit-' + SUITS[P.suit].id + '-' + Date.now() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+      renderer.setSize(Math.round(renderer.domElement.clientWidth||760), Math.round((renderer.domElement.clientWidth||760)/0.8), false);
+      resizePreview();
+      renderFrame();
+    }catch(e){
+      console.error(e);
+    }
+    ov.style.display = 'none';
+  }, 60);
+};
+
+/* ============ 启动 ============ */
+(function(){
+  const h = location.hash.replace('#','');
+  const idx = SUITS.findIndex(s=>s.id===h);
+  if(idx>=0){ P.suit = idx; document.querySelectorAll('.suit-btn')[idx].classList.add('active'); document.querySelectorAll('.suit-btn')[idx-1>=0?idx-1:0] && grid.querySelectorAll('.suit-btn').forEach((b,i)=>b.classList.toggle('active',i===idx)); }
+})();
+initScene();
+makeBgGradient(SUITS[P.suit].bg[0], SUITS[P.suit].bg[1]);
+resizePreview();
+rebuild();
+loop();
+</script>
+</body>
+</html>
